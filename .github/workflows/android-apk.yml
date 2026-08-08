@@ -2,6 +2,17 @@ name: Android APK bauen
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - claude/kinetiq-fitness-app-xn3il1
+    paths:
+      - '.github/workflows/android-apk.yml'
+      - 'android/**'
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.ts'
+      - 'vite.config.ts'
 
 jobs:
   build:
