@@ -81,11 +81,14 @@ export interface CustomExercise {
   createdAt: number
 }
 
+export type SetType = 'normal' | 'warmup' | 'failure' | 'dropset'
+
 export interface SetEntry {
   setNumber: number
   reps: number
   weight: number
   completed: boolean
+  type?: SetType
 }
 
 export interface ExerciseLogEntry {
@@ -97,6 +100,7 @@ export interface ExerciseLogEntry {
   repsMin: number
   repsMax: number
   sets: SetEntry[]
+  notes?: string
 }
 
 export interface WorkoutSession {

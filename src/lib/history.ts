@@ -28,7 +28,7 @@ export function getProgressForExercise(
   for (const session of sessions) {
     const entry = session.exercises.find((e) => e.exerciseId === exerciseId)
     if (!entry) continue
-    const completedSets = entry.sets.filter((s) => s.completed && s.reps > 0)
+    const completedSets = entry.sets.filter((s) => s.completed && s.reps > 0 && s.type !== 'warmup')
     if (completedSets.length === 0) continue
     points.push({
       date: session.date,
