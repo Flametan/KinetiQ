@@ -1,7 +1,6 @@
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
-
-const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+import { dayLabel, getDayIndexInCycle } from '../lib/schedule'
 
 export default function TrainingPage() {
   const plan = useAppStore((s) => s.activePlan)
@@ -10,7 +9,7 @@ export default function TrainingPage() {
 
   if (!plan) return <Navigate to="/onboarding" replace />
 
-  const todayIndex = (new Date().getDay() + 6) % 7 // 0 = Montag
+  const todayIndex = getDayIndexInCycle(plan.createdAt)
   const suggestedDayId = plan.schedule[todayIndex]
 
   const lastSessionByDay = new Map<string, string>()
@@ -24,7 +23,7 @@ export default function TrainingPage() {
         <p className="text-xs font-medium text-brand-400">Training starten</p>
         <h1 className="mt-0.5 text-xl font-bold text-white">Was steht heute an?</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Heute ist {DAY_LABELS[todayIndex]} —{' '}
+          Heute ist {dayLabel(todayIndex)} deines Zyklus —{' '}
           {suggestedDayId
             ? `geplant: ${plan.days.find((d) => d.id === suggestedDayId)?.name}`
             : 'eigentlich Ruhetag, du kannst aber trotzdem trainieren'}

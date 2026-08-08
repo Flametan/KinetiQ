@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import ExercisePicker from '../components/ExercisePicker'
+import Barbell from '../components/Barbell'
+import { DAY_CYCLE_LABELS, getDayIndexInCycle } from '../lib/schedule'
 import type { UserPlanSlot } from '../types'
-
-const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 
 export default function PlanPage() {
   const plan = useAppStore((s) => s.activePlan)
@@ -39,24 +39,32 @@ export default function PlanPage() {
     }
   }
 
+  const todayIndex = getDayIndexInCycle(plan.createdAt)
+
   return (
     <div className="flex flex-col gap-6 pb-10">
-      <header className="pt-2">
-        <p className="text-xs font-medium text-brand-400">{plan.splitLabel}</p>
-        <h1 className="mt-0.5 text-xl font-bold text-white">{plan.variantName}</h1>
+      <header className="flex items-center justify-between gap-3 pt-2">
+        <div>
+          <p className="text-xs font-medium text-brand-400">{plan.splitLabel}</p>
+          <h1 className="mt-0.5 text-xl font-bold text-white">{plan.variantName}</h1>
+        </div>
+        <Barbell plates={plan.daysPerWeek} size="md" />
       </header>
 
       <section>
         <div className="flex gap-1.5">
           {plan.schedule.map((dayId, i) => {
             const day = plan.days.find((d) => d.id === dayId)
+            const isToday = i === todayIndex
             return (
               <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-                <span className="text-[10px] text-slate-500">{DAY_LABELS[i]}</span>
+                <span className={`text-[10px] ${isToday ? 'font-semibold text-brand-400' : 'text-slate-500'}`}>
+                  {DAY_CYCLE_LABELS[i]}
+                </span>
                 <div
                   className={`flex h-10 w-full items-center justify-center rounded-lg text-[10px] font-medium ${
                     day ? 'bg-brand-500/70 text-white' : 'bg-white/5 text-slate-600'
-                  }`}
+                  } ${isToday ? 'ring-2 ring-brand-300' : ''}`}
                 >
                   {day ? '' : '–'}
                 </div>
