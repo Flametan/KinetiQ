@@ -1,14 +1,21 @@
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import { movementPatternById } from '../data/movementPatterns'
 import { db } from '../db/db'
+import type { DataExport } from '../types'
 
 export default function SettingsPage() {
   const customExercises = useAppStore((s) => s.customExercises)
   const removeCustomExercise = useAppStore((s) => s.removeCustomExercise)
   const plan = useAppStore((s) => s.activePlan)
   const init = useAppStore((s) => s.init)
+  const exportAll = useAppStore((s) => s.exportAll)
+  const importAll = useAppStore((s) => s.importAll)
   const navigate = useNavigate()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [importError, setImportError] = useState<string | null>(null)
+  const [importSuccess, setImportSuccess] = useState(false)
 
   async function resetAll() {
     if (!confirm('Wirklich ALLE Daten löschen? Plan, eigene Übungen und dein kompletter Trainingsverlauf gehen unwiderruflich verloren.')) {
@@ -18,6 +25,51 @@ export default function SettingsPage() {
     await db.open()
     await init()
     navigate('/onboarding')
+  }
+
+  async function handleExport() {
+    const data = await exportAll()
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    const date = new Date().toISOString().slice(0, 10)
+    a.href = url
+    a.download = `kinetiq-export-${date}.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleImportClick() {
+    setImportError(null)
+    setImportSuccess(false)
+    fileInputRef.current?.click()
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text) as DataExport
+      if (!data || typeof data !== 'object' || !Array.isArray(data.sessions)) {
+        throw new Error('Datei hat kein gültiges KinetiQ-Export-Format.')
+      }
+      if (
+        !confirm(
+          'Import ersetzt ALLE aktuellen Daten auf diesem Gerät durch den Inhalt der Datei. Fortfahren?',
+        )
+      ) {
+        return
+      }
+      await importAll(data)
+      setImportSuccess(true)
+      navigate('/plan')
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Import fehlgeschlagen.')
+    }
   }
 
   return (
@@ -68,6 +120,31 @@ export default function SettingsPage() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <p className="text-sm font-semibold text-white">Daten sichern</p>
+        <p className="mt-1 text-xs text-slate-400">
+          Alle Daten liegen nur lokal auf diesem Gerät. Exportiere regelmäßig ein Backup oder übertrage
+          deine Daten auf ein neues Gerät per Export/Import.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={handleExport}
+            className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm font-medium text-slate-200 hover:border-white/20"
+          >
+            Exportieren
+          </button>
+          <button
+            onClick={handleImportClick}
+            className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm font-medium text-slate-200 hover:border-white/20"
+          >
+            Importieren
+          </button>
+        </div>
+        <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFileChange} className="hidden" />
+        {importError && <p className="mt-2 text-xs text-red-400">{importError}</p>}
+        {importSuccess && <p className="mt-2 text-xs text-brand-300">Import erfolgreich.</p>}
       </section>
 
       <section className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4">

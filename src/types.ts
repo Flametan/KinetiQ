@@ -53,6 +53,10 @@ export interface UserPlanSlot {
   movementPatternIds: string[]
   exerciseId: string | null
   exerciseName: string | null
+  /** Individuelle Pausenzeit in Sekunden; unset = Standardwert verwenden. */
+  restSeconds?: number
+  /** Slots mit derselben ID werden als Superset ohne volle Pause dazwischen behandelt. */
+  supersetGroup?: string | null
 }
 
 export interface UserPlanDay {
@@ -89,6 +93,8 @@ export interface SetEntry {
   weight: number
   completed: boolean
   type?: SetType
+  /** Rate of Perceived Exertion, 1-10 (optional). */
+  rpe?: number
 }
 
 export interface ExerciseLogEntry {
@@ -101,6 +107,7 @@ export interface ExerciseLogEntry {
   repsMax: number
   sets: SetEntry[]
   notes?: string
+  supersetGroup?: string | null
 }
 
 export interface WorkoutSession {
@@ -112,4 +119,21 @@ export interface WorkoutSession {
   startedAt: number
   finishedAt: number | null
   exercises: ExerciseLogEntry[]
+}
+
+export interface BodyWeightEntry {
+  id: string
+  date: string
+  weight: number
+  createdAt: number
+}
+
+/** Vollständiger Export aller lokalen Nutzerdaten (für Backup/Übertragung). */
+export interface DataExport {
+  exportedAt: string
+  version: 1
+  plans: UserPlan[]
+  customExercises: CustomExercise[]
+  sessions: WorkoutSession[]
+  bodyWeights: BodyWeightEntry[]
 }

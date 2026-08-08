@@ -4,6 +4,7 @@ import { useAppStore } from '../store/useAppStore'
 import ExercisePicker from '../components/ExercisePicker'
 import Barbell from '../components/Barbell'
 import { DAY_CYCLE_LABELS, getDayIndexInCycle } from '../lib/schedule'
+import { generateId } from '../utils/id'
 import type { UserPlanSlot } from '../types'
 
 export default function PlanPage() {
@@ -29,6 +30,35 @@ export default function PlanPage() {
               ),
             },
       ),
+    }))
+  }
+
+  function toggleSuperset(dayId: string, index: number) {
+    updatePlan((p) => ({
+      ...p,
+      days: p.days.map((d) => {
+        if (d.id !== dayId) return d
+        const a = d.slots[index]
+        const b = d.slots[index + 1]
+        if (!b) return d
+        const connected = !!a.supersetGroup && a.supersetGroup === b.supersetGroup
+        if (connected) {
+          const groupId = a.supersetGroup
+          let cut = false
+          return {
+            ...d,
+            slots: d.slots.map((s, i) => {
+              if (i === index + 1) cut = true
+              return cut && s.supersetGroup === groupId ? { ...s, supersetGroup: null } : s
+            }),
+          }
+        }
+        const groupId = a.supersetGroup ?? generateId('ss')
+        return {
+          ...d,
+          slots: d.slots.map((s, i) => (i === index || i === index + 1 ? { ...s, supersetGroup: groupId } : s)),
+        }
+      }),
     }))
   }
 
@@ -102,29 +132,48 @@ export default function PlanPage() {
                 </svg>
               </button>
               {isOpen && (
-                <div className="flex flex-col gap-2 border-t border-white/10 px-4 py-3">
-                  {day.slots.map((slot) => (
-                    <button
-                      key={slot.slotId}
-                      onClick={() => setEditingSlot({ dayId: day.id, slot })}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/60 px-3.5 py-3 text-left hover:border-white/20"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-xs text-slate-500">{slot.label}</p>
-                        <p className="truncate text-sm font-medium text-white">
-                          {slot.exerciseName ?? 'Übung wählen'}
-                        </p>
+                <div className="flex flex-col border-t border-white/10 px-4 py-3">
+                  {day.slots.map((slot, i) => {
+                    const next = day.slots[i + 1]
+                    const connected = !!next && !!slot.supersetGroup && slot.supersetGroup === next.supersetGroup
+                    return (
+                      <div key={slot.slotId} className="flex flex-col gap-2">
+                        <button
+                          onClick={() => setEditingSlot({ dayId: day.id, slot })}
+                          className={`flex items-center justify-between gap-3 rounded-xl border bg-slate-950/60 px-3.5 py-3 text-left hover:border-white/20 ${
+                            slot.supersetGroup ? 'border-purple-500/30' : 'border-white/10'
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-xs text-slate-500">{slot.label}</p>
+                            <p className="truncate text-sm font-medium text-white">
+                              {slot.exerciseName ?? 'Übung wählen'}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className="rounded-md bg-white/5 px-2 py-1 text-xs font-medium text-slate-300">
+                              {slot.sets} × {slot.repsMin}-{slot.repsMax}
+                            </span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-slate-500">
+                              <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                            </svg>
+                          </div>
+                        </button>
+                        {next && (
+                          <button
+                            onClick={() => toggleSuperset(day.id, i)}
+                            className={`mx-auto flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium ${
+                              connected
+                                ? 'bg-purple-500/15 text-purple-300'
+                                : 'text-slate-600 hover:text-slate-400'
+                            }`}
+                          >
+                            {connected ? '⛓ Verbunden – trennen' : '+ Als Superset verbinden'}
+                          </button>
+                        )}
                       </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className="rounded-md bg-white/5 px-2 py-1 text-xs font-medium text-slate-300">
-                          {slot.sets} × {slot.repsMin}-{slot.repsMax}
-                        </span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-slate-500">
-                          <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                        </svg>
-                      </div>
-                    </button>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>

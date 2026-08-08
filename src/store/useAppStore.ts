@@ -1,12 +1,13 @@
 import { create } from 'zustand'
 import { localRepository as repo } from '../db/repository'
-import type { CustomExercise, UserPlan, WorkoutSession } from '../types'
+import type { BodyWeightEntry, CustomExercise, DataExport, UserPlan, WorkoutSession } from '../types'
 
 interface AppState {
   loading: boolean
   activePlan: UserPlan | null
   customExercises: CustomExercise[]
   sessions: WorkoutSession[]
+  bodyWeights: BodyWeightEntry[]
   init: () => Promise<void>
   setPlan: (plan: UserPlan) => Promise<void>
   updatePlan: (updater: (plan: UserPlan) => UserPlan) => Promise<void>
@@ -15,6 +16,10 @@ interface AppState {
   removeCustomExercise: (id: string) => Promise<void>
   addSession: (session: WorkoutSession) => Promise<void>
   removeSession: (id: string) => Promise<void>
+  addBodyWeight: (entry: BodyWeightEntry) => Promise<void>
+  removeBodyWeight: (id: string) => Promise<void>
+  exportAll: () => Promise<DataExport>
+  importAll: (data: DataExport) => Promise<void>
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -22,14 +27,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   activePlan: null,
   customExercises: [],
   sessions: [],
+  bodyWeights: [],
 
   init: async () => {
-    const [plan, customExercises, sessions] = await Promise.all([
+    const [plan, customExercises, sessions, bodyWeights] = await Promise.all([
       repo.getActivePlan(),
       repo.getCustomExercises(),
       repo.getSessions(),
+      repo.getBodyWeights(),
     ])
-    set({ activePlan: plan ?? null, customExercises, sessions, loading: false })
+    set({ activePlan: plan ?? null, customExercises, sessions, bodyWeights, loading: false })
   },
 
   setPlan: async (plan) => {
@@ -72,5 +79,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   removeSession: async (id) => {
     await repo.deleteSession(id)
     set((s) => ({ sessions: s.sessions.filter((sess) => sess.id !== id) }))
+  },
+
+  addBodyWeight: async (entry) => {
+    await repo.saveBodyWeight(entry)
+    set((s) => ({ bodyWeights: [...s.bodyWeights.filter((b) => b.id !== entry.id), entry].sort((a, b) => a.date.localeCompare(b.date)) }))
+  },
+
+  removeBodyWeight: async (id) => {
+    await repo.deleteBodyWeight(id)
+    set((s) => ({ bodyWeights: s.bodyWeights.filter((b) => b.id !== id) }))
+  },
+
+  exportAll: () => repo.exportAll(),
+
+  importAll: async (data) => {
+    await repo.importAll(data)
+    await get().init()
   },
 }))
