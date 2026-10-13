@@ -32,7 +32,9 @@ function Splash() {
 
 function Home() {
   const activePlan = useAppStore((s) => s.activePlan)
-  return <Navigate to={activePlan ? '/plan' : '/onboarding'} replace />
+  // Landet direkt auf "Training" statt "Plan" – ein Tap näher an der Hauptaktion
+  // (heutiges Training starten), die Plan-Übersicht bleibt über die Navigation erreichbar.
+  return <Navigate to={activePlan ? '/training' : '/onboarding'} replace />
 }
 
 export default function App() {
