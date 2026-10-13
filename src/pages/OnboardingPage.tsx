@@ -35,23 +35,27 @@ export default function OnboardingPage() {
       </header>
 
       <section>
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-[.1em] text-dim">
+        <h2 className="mb-5 text-xs font-bold uppercase tracking-[.1em] text-dim">
           Trainingstage in den nächsten 7 Tagen
         </h2>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="flex justify-center overflow-x-auto py-2">
+          <Barbell plates={daysPerWeek ?? 0} size="xl" active={daysPerWeek !== null} />
+        </div>
+        <p className="mt-3 text-center font-display text-2xl text-ink">
+          {daysPerWeek ?? '–'} <span className="text-sm font-body font-semibold text-dim">Tage</span>
+        </p>
+        <div className="mt-5 grid grid-cols-5 gap-2">
           {splitOptions.map((s) => (
             <button
               key={s.daysPerWeek}
               onClick={() => setDaysPerWeek(s.daysPerWeek)}
-              className={`press flex flex-col items-center justify-center gap-2.5 border py-4 transition-colors ${
+              className={`press flex h-11 items-center justify-center border font-display text-lg transition-colors ${
                 daysPerWeek === s.daysPerWeek
                   ? 'border-ink bg-ink text-on-ink'
                   : 'border-line bg-surface text-ink hover:border-ink'
               }`}
             >
-              <Barbell plates={s.daysPerWeek} size="xs" active={daysPerWeek === s.daysPerWeek} />
-              <span className="font-display text-xl">{s.daysPerWeek}</span>
-              <span className="text-[11px] font-semibold uppercase tracking-wide opacity-70">Tage</span>
+              {s.daysPerWeek}
             </button>
           ))}
         </div>

@@ -1,7 +1,7 @@
 interface BarbellProps {
   /** Anzahl Scheiben pro Seite = Anzahl Trainingstage im Split. */
   plates: number
-  size?: 'xs' | 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   active?: boolean
 }
 
@@ -10,6 +10,7 @@ const SIZES = {
   sm: { plateH: 30, plateW: 7, gap: 2, barOverhang: 10, barThickness: 4 },
   md: { plateH: 42, plateW: 9, gap: 2.5, barOverhang: 14, barThickness: 5 },
   lg: { plateH: 56, plateW: 11, gap: 3, barOverhang: 18, barThickness: 6 },
+  xl: { plateH: 80, plateW: 16, gap: 4, barOverhang: 26, barThickness: 8 },
 } as const
 
 /**
@@ -31,7 +32,7 @@ export default function Barbell({ plates, size = 'md', active = true }: BarbellP
         {Array.from({ length: plates }).map((_, i) => (
           <div
             key={`l-${i}`}
-            className={`rounded-[1px] ${plateColor}`}
+            className={`plate-in-left rounded-[1px] ${plateColor}`}
             style={{ width: plateW, height: plateH }}
           />
         ))}
@@ -39,7 +40,7 @@ export default function Barbell({ plates, size = 'md', active = true }: BarbellP
         {Array.from({ length: plates }).map((_, i) => (
           <div
             key={`r-${i}`}
-            className={`rounded-[1px] ${plateColor}`}
+            className={`plate-in-right rounded-[1px] ${plateColor}`}
             style={{ width: plateW, height: plateH }}
           />
         ))}

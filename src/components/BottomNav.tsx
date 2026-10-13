@@ -47,9 +47,10 @@ function ClipboardIcon({ active }: { active: boolean }) {
 function DumbbellIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6.5 6.5 3 10l4 4 3.5-3.5" />
-      <path d="M17.5 17.5 21 14l-4-4-3.5 3.5" />
-      <path d="m9 15 6-6" />
+      <path d="M2.5 12h2.5M19 12h2.5" />
+      <rect x="5" y="8.5" width="3" height="7" rx="1" />
+      <rect x="16" y="8.5" width="3" height="7" rx="1" />
+      <path d="M8 12h8" />
     </svg>
   )
 }
@@ -57,8 +58,9 @@ function DumbbellIcon({ active }: { active: boolean }) {
 function ChartIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 19V10M12 19V5M20 19v-6" />
-      <path d="M3 19h18" />
+      <rect x="4" y="13" width="4" height="7" rx="1" />
+      <rect x="10" y="8" width="4" height="12" rx="1" />
+      <rect x="16" y="4" width="4" height="16" rx="1" />
     </svg>
   )
 }

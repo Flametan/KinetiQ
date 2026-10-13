@@ -134,4 +134,32 @@ a,
   .press:active {
     transform: scale(0.96);
   }
+
+  /* Scheiben "gleiten" beim Hinzufügen von ihrer jeweiligen Seite auf die Stange. */
+  @keyframes plate-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-14px) scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+  @keyframes plate-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(14px) scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+  .plate-in-left {
+    animation: plate-in-left 0.2s ease-out;
+  }
+  .plate-in-right {
+    animation: plate-in-right 0.2s ease-out;
+  }
 }
