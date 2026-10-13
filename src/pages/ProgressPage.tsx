@@ -11,7 +11,8 @@ import {
 } from '../lib/history'
 import { generateId } from '../utils/id'
 import CalendarHeatmap from '../components/CalendarHeatmap'
-import type { WorkoutSession } from '../types'
+import { displayToKg, kgToDisplay, unitLabel } from '../lib/units'
+import type { WeightUnit, WorkoutSession } from '../types'
 
 type View = 'exercise' | 'history' | 'calendar' | 'balance' | 'bodyweight'
 
@@ -26,6 +27,7 @@ const VIEWS: { id: View; label: string }[] = [
 export default function ProgressPage() {
   const sessions = useAppStore((s) => s.sessions)
   const customExercises = useAppStore((s) => s.customExercises)
+  const unit = useAppStore((s) => s.settings.weightUnit)
   const loggedExercises = useMemo(() => listLoggedExerciseIds(sessions), [sessions])
   const [selectedId, setSelectedId] = useState<string | null>(loggedExercises[0]?.id ?? null)
   const [metric, setMetric] = useState<'maxWeight' | 'estimated1RM'>('maxWeight')
@@ -55,6 +57,8 @@ export default function ProgressPage() {
 
   const chartData = progress.map((p) => ({
     ...p,
+    maxWeight: kgToDisplay(p.maxWeight, unit),
+    estimated1RM: kgToDisplay(p.estimated1RM, unit),
     label: new Date(p.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
   }))
 
@@ -76,7 +80,7 @@ export default function ProgressPage() {
       </section>
 
       {sessions.length === 0 ? (
-        <div className="border border-line bg-white p-6 text-center text-sm text-dim">
+        <div className="border border-line bg-surface p-6 text-center text-sm text-dim">
           Noch keine Trainings geloggt. Starte dein erstes Training, um hier deinen Fortschritt zu sehen.
         </div>
       ) : (
@@ -87,7 +91,7 @@ export default function ProgressPage() {
                 key={v.id}
                 onClick={() => setView(v.id)}
                 className={`shrink-0 px-3.5 py-2 text-sm font-semibold transition-colors ${
-                  view === v.id ? 'bg-ink text-white' : 'bg-panel2 text-dim hover:text-ink'
+                  view === v.id ? 'bg-ink text-on-ink' : 'bg-panel2 text-dim hover:text-ink'
                 }`}
               >
                 {v.label}
@@ -104,7 +108,7 @@ export default function ProgressPage() {
                 <select
                   value={activeId ?? ''}
                   onChange={(e) => setSelectedId(e.target.value)}
-                  className="w-full border border-line bg-white px-3.5 py-3 text-sm text-ink focus:border-ink focus:outline-none"
+                  className="w-full border border-line bg-surface px-3.5 py-3 text-sm text-ink focus:border-ink focus:outline-none"
                 >
                   {loggedExercises.map((e) => (
                     <option key={e.id} value={e.id}>
@@ -116,23 +120,25 @@ export default function ProgressPage() {
 
               {records && (records.bestWeight > 0 || records.best1RM > 0) && (
                 <section className="grid grid-cols-3 gap-3">
-                  <StatCard label="Bestgewicht" value={`${records.bestWeight} kg`} isText />
+                  <StatCard label="Bestgewicht" value={`${kgToDisplay(records.bestWeight, unit)} ${unitLabel(unit)}`} isText />
                   <StatCard label="Beste Wdh." value={records.bestReps} />
-                  <StatCard label="Geschätzt 1RM" value={`${Math.round(records.best1RM)} kg`} isText />
+                  <StatCard label="Geschätzt 1RM" value={`${kgToDisplay(records.best1RM, unit)} ${unitLabel(unit)}`} isText />
                 </section>
               )}
 
               {chartData.length > 0 && (
-                <section className="border border-line bg-white p-4">
+                <section className="border border-line bg-surface p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <p className="text-xs font-bold uppercase tracking-wide text-dim">
-                      {metric === 'maxWeight' ? 'Maximalgewicht pro Training (kg)' : 'Geschätztes 1RM pro Training (kg)'}
+                      {metric === 'maxWeight'
+                        ? `Maximalgewicht pro Training (${unitLabel(unit)})`
+                        : `Geschätztes 1RM pro Training (${unitLabel(unit)})`}
                     </p>
                     <div className="flex gap-1 border border-line p-0.5">
                       <button
                         onClick={() => setMetric('maxWeight')}
                         className={`px-2 py-1 text-[11px] font-bold ${
-                          metric === 'maxWeight' ? 'bg-ink text-white' : 'text-dim'
+                          metric === 'maxWeight' ? 'bg-ink text-on-ink' : 'text-dim'
                         }`}
                       >
                         Gewicht
@@ -140,7 +146,7 @@ export default function ProgressPage() {
                       <button
                         onClick={() => setMetric('estimated1RM')}
                         className={`px-2 py-1 text-[11px] font-bold ${
-                          metric === 'estimated1RM' ? 'bg-ink text-white' : 'text-dim'
+                          metric === 'estimated1RM' ? 'bg-ink text-on-ink' : 'text-dim'
                         }`}
                       >
                         1RM
@@ -168,7 +174,7 @@ export default function ProgressPage() {
                           }}
                           labelStyle={{ color: '#fafaf8' }}
                           itemStyle={{ color: '#fafaf8' }}
-                          formatter={(value) => [`${Math.round(Number(value) * 10) / 10} kg`, '']}
+                          formatter={(value) => [`${Math.round(Number(value) * 10) / 10} ${unitLabel(unit)}`, '']}
                         />
                         <Line
                           type="monotone"
@@ -188,12 +194,12 @@ export default function ProgressPage() {
                 {sessionsForExercise.map((session) => {
                   const entry = session.exercises.find((e) => e.exerciseId === activeId)!
                   return (
-                    <div key={session.id} className="border border-line bg-white p-3.5">
+                    <div key={session.id} className="border border-line bg-surface p-3.5">
                       <div className="mb-2 flex items-center justify-between">
                         <p className="text-sm font-semibold text-ink">{session.dayName}</p>
                         <p className="text-xs text-dim">{formatFullDate(session.date)}</p>
                       </div>
-                      <SetChips sets={entry.sets} />
+                      <SetChips sets={entry.sets} unit={unit} />
                     </div>
                   )
                 })}
@@ -201,11 +207,11 @@ export default function ProgressPage() {
             </>
           )}
 
-          {view === 'history' && <SessionHistoryList sessions={sessions} />}
+          {view === 'history' && <SessionHistoryList sessions={sessions} unit={unit} />}
 
           {view === 'calendar' && (
             <section className="flex flex-col gap-4">
-              <div className="border border-line bg-white p-4">
+              <div className="border border-line bg-surface p-4">
                 <p className="mb-3 text-xs font-bold uppercase tracking-wide text-dim">
                   Trainings-Konsistenz (letzte 12 Wochen)
                 </p>
@@ -225,7 +231,7 @@ export default function ProgressPage() {
 
           {view === 'balance' && <MuscleBalanceView entries={muscleBalance} />}
 
-          {view === 'bodyweight' && <BodyWeightView />}
+          {view === 'bodyweight' && <BodyWeightView unit={unit} />}
         </>
       )}
     </div>
@@ -241,7 +247,7 @@ function MuscleBalanceView({ entries }: { entries: ReturnType<typeof getMuscleBa
 
   if (entries.length === 0) {
     return (
-      <div className="border border-line bg-white p-6 text-center text-sm text-dim">
+      <div className="border border-line bg-surface p-6 text-center text-sm text-dim">
         Noch keine Trainings in den letzten 7 Tagen – Balance erscheint hier, sobald du loslegst.
       </div>
     )
@@ -273,7 +279,7 @@ function MuscleBalanceView({ entries }: { entries: ReturnType<typeof getMuscleBa
   )
 }
 
-function BodyWeightView() {
+function BodyWeightView({ unit }: { unit: WeightUnit }) {
   const bodyWeights = useAppStore((s) => s.bodyWeights)
   const addBodyWeight = useAppStore((s) => s.addBodyWeight)
   const removeBodyWeight = useAppStore((s) => s.removeBodyWeight)
@@ -281,6 +287,7 @@ function BodyWeightView() {
 
   const chartData = bodyWeights.map((b) => ({
     ...b,
+    weight: kgToDisplay(b.weight, unit),
     label: new Date(b.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
   }))
 
@@ -290,7 +297,7 @@ function BodyWeightView() {
     await addBodyWeight({
       id: generateId('bw'),
       date: new Date().toISOString(),
-      weight: value,
+      weight: displayToKg(value, unit),
       createdAt: Date.now(),
     })
     setWeight('')
@@ -305,25 +312,25 @@ function BodyWeightView() {
           step="0.1"
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
-          placeholder="Heutiges Gewicht (kg)"
-          className="flex-1 border border-line bg-white px-3.5 py-3 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
+          placeholder={`Heutiges Gewicht (${unitLabel(unit)})`}
+          className="flex-1 border border-line bg-surface px-3.5 py-3 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
         />
         <button
           onClick={submit}
           disabled={!weight}
-          className="bg-ink px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
+          className="bg-ink px-4 py-2 text-sm font-bold text-on-ink disabled:opacity-40"
         >
           Eintragen
         </button>
       </div>
 
       {chartData.length === 0 ? (
-        <div className="border border-line bg-white p-6 text-center text-sm text-dim">
+        <div className="border border-line bg-surface p-6 text-center text-sm text-dim">
           Noch kein Körpergewicht erfasst.
         </div>
       ) : (
         <>
-          <div className="border border-line bg-white p-4">
+          <div className="border border-line bg-surface p-4">
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 8, bottom: 0, left: 0 }}>
@@ -349,8 +356,8 @@ function BodyWeightView() {
 
           <div className="flex flex-col gap-1.5">
             {[...bodyWeights].reverse().map((b) => (
-              <div key={b.id} className="flex items-center justify-between border border-line bg-white px-3.5 py-2.5">
-                <span className="text-sm font-semibold text-ink">{b.weight} kg</span>
+              <div key={b.id} className="flex items-center justify-between border border-line bg-surface px-3.5 py-2.5">
+                <span className="text-sm font-semibold text-ink">{kgToDisplay(b.weight, unit)} {unitLabel(unit)}</span>
                 <span className="text-xs text-dim">{formatFullDate(b.date)}</span>
                 <button onClick={() => removeBodyWeight(b.id)} className="text-dim hover:text-brand-400" aria-label="Löschen">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -366,7 +373,7 @@ function BodyWeightView() {
   )
 }
 
-function SessionHistoryList({ sessions }: { sessions: WorkoutSession[] }) {
+function SessionHistoryList({ sessions, unit }: { sessions: WorkoutSession[]; unit: WeightUnit }) {
   const [openId, setOpenId] = useState<string | null>(sessions[0]?.id ?? null)
 
   return (
@@ -376,7 +383,7 @@ function SessionHistoryList({ sessions }: { sessions: WorkoutSession[] }) {
         const isOpen = openId === session.id
         const totalSets = session.exercises.reduce((sum, e) => sum + e.sets.filter((s) => s.completed).length, 0)
         return (
-          <div key={session.id} className="overflow-hidden border border-line bg-white">
+          <div key={session.id} className="overflow-hidden border border-line bg-surface">
             <button
               onClick={() => setOpenId(isOpen ? null : session.id)}
               className="flex w-full items-center justify-between px-4 py-3.5"
@@ -386,6 +393,7 @@ function SessionHistoryList({ sessions }: { sessions: WorkoutSession[] }) {
                 <p className="text-xs text-dim">
                   {formatFullDate(session.date)} · {session.exercises.length} Übungen · {totalSets} Sätze
                 </p>
+                {session.note && <p className="mt-1 text-xs italic text-brand-400">{session.note}</p>}
               </div>
               <svg
                 width="18"
@@ -407,7 +415,7 @@ function SessionHistoryList({ sessions }: { sessions: WorkoutSession[] }) {
                   <div key={entry.slotId}>
                     <p className="mb-1.5 text-xs text-dim">{entry.label}</p>
                     <p className="mb-1.5 text-sm font-semibold text-ink">{entry.exerciseName}</p>
-                    <SetChips sets={entry.sets} />
+                    <SetChips sets={entry.sets} unit={unit} />
                   </div>
                 ))}
               </div>
@@ -419,7 +427,7 @@ function SessionHistoryList({ sessions }: { sessions: WorkoutSession[] }) {
   )
 }
 
-function SetChips({ sets }: { sets: WorkoutSession['exercises'][number]['sets'] }) {
+function SetChips({ sets, unit }: { sets: WorkoutSession['exercises'][number]['sets']; unit: WeightUnit }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {sets.map((set, i) => (
@@ -429,7 +437,7 @@ function SetChips({ sets }: { sets: WorkoutSession['exercises'][number]['sets'] 
             set.completed ? 'bg-brand-500 text-white' : 'bg-panel2 text-dim'
           }`}
         >
-          {set.reps} × {set.weight}kg
+          {set.reps} × {kgToDisplay(set.weight, unit)}{unitLabel(unit)}
           {set.rpe ? ` · RPE ${set.rpe}` : ''}
         </span>
       ))}
@@ -443,7 +451,7 @@ function formatFullDate(iso: string) {
 
 function StatCard({ label, value, isText }: { label: string; value: number | string; isText?: boolean }) {
   return (
-    <div className="border border-line bg-white p-4">
+    <div className="border border-line bg-surface p-4">
       <p className={`font-display text-ink ${isText ? 'text-lg' : 'text-2xl'}`}>{value}</p>
       <p className="mt-0.5 text-xs text-dim">{label}</p>
     </div>

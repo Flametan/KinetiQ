@@ -21,3 +21,17 @@ export function dayLabel(index: number): string {
 }
 
 export const DAY_CYCLE_LABELS = Array.from({ length: 7 }, (_, i) => dayLabel(i))
+
+/** Wochennummer im Mesozyklus seit Planerstellung (1-basiert). */
+export function getMesocycleWeek(createdAt: number, now: number = Date.now()): number {
+  const start = startOfDay(createdAt)
+  const today = startOfDay(now)
+  const diffDays = Math.max(0, Math.round((today - start) / 86_400_000))
+  return Math.floor(diffDays / 7) + 1
+}
+
+/** Ob die aktuelle Woche laut Intervall eine Deload-Woche ist. */
+export function isDeloadWeek(createdAt: number, intervalWeeks: number, now: number = Date.now()): boolean {
+  if (intervalWeeks <= 0) return false
+  return getMesocycleWeek(createdAt, now) % intervalWeeks === 0
+}

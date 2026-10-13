@@ -101,6 +101,27 @@ export const exerciseOptions: ExerciseOption[] = [
   ...group(MP.waden, ['Wadenheben stehend', 'Wadenheben sitzend']),
   ...group(MP.adduktoren, ['Adduktorenmaschine', 'Adduktion am Kabelzug']),
   ...group(MP.bauch, ['Cable Crunches', 'Crunches', 'Sit-ups', 'Beinheben hängend', 'Ab Wheel Rollout']),
+
+  /**
+   * Erweiterte Übungsbibliothek – NICHT aus dem PDF, sondern gängige Standard-
+   * Varianten pro Bewegungsmuster, nach demselben Prinzip wie oben bei
+   * Beinstrecker/Adduktoren/Bauch Isolation ergänzt, um die Auswahl zu verbreitern.
+   */
+  ...group(MP.horizontalDruck, ['Liegestütze']),
+  ...group(MP.vertikalDruck, ['Arnold Press', 'Landmine Press']),
+  ...group(MP.vertikalZugEng, ['Neutralgriff-Klimmzüge']),
+  ...group(MP.vertikalZugBreit, ['Assistierte Klimmzüge']),
+  ...group(MP.horizontalZugEng, ['Brustgestütztes Rudern Kurzhantel']),
+  ...group(MP.horizontalZugBreit, ['Pendlay Row']),
+  ...group(MP.schraegbank, ['Schrägbankdrücken Multipresse']),
+  ...group(MP.flySchraeg, ['Schrägbank Butterfly Maschine']),
+  ...group(MP.hintereSchulter, ['Face Pulls']),
+  ...group(MP.kniebeuge, ['Goblet Squat']),
+  ...group(MP.kreuzheben, ['Sumo-Kreuzheben']),
+  ...group(MP.hueftstreck, ['Cable Pull-Through']),
+  ...group(MP.beinbeuger, ['Beinbeuger stehend am Kabel']),
+  ...group(MP.waden, ['Wadenheben an der Beinpresse']),
+  ...group(MP.bauch, ['Plank']),
 ]
 
 export const exerciseOptionsByPattern = exerciseOptions.reduce<Record<string, ExerciseOption[]>>(

@@ -101,6 +101,25 @@ export function getPersonalRecords(sessions: WorkoutSession[], exerciseId: strin
   return records
 }
 
+/**
+ * Einfache Progressive-Overload-Heuristik: wenn beim letzten Mal alle Arbeitssätze
+ * am oberen Ende des Wiederholungsbereichs abgeschlossen wurden, +2.5kg vorschlagen,
+ * sonst dasselbe Gewicht erneut. Gibt null zurück, wenn keine Vorgabe möglich ist.
+ */
+export function suggestNextWeight(
+  lastSets: SetEntry[] | null,
+  repsMax: number,
+  deloadFactor = 1,
+): number | null {
+  if (!lastSets || lastSets.length === 0) return null
+  const working = lastSets.filter((s) => s.completed && s.weight > 0 && (s.type ?? 'normal') !== 'warmup')
+  if (working.length === 0) return null
+  const maxWeight = Math.max(...working.map((s) => s.weight))
+  const allHitTop = working.every((s) => s.reps >= repsMax)
+  const suggestion = allHitTop ? maxWeight + 2.5 : maxWeight
+  return Math.round(suggestion * deloadFactor * 2) / 2
+}
+
 export function listLoggedExerciseIds(sessions: WorkoutSession[]): { id: string; name: string }[] {
   const map = new Map<string, string>()
   for (const session of sessions) {

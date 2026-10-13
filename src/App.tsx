@@ -7,6 +7,7 @@ import PlanPage from './pages/PlanPage'
 import TrainingPage from './pages/TrainingPage'
 import WorkoutPage from './pages/WorkoutPage'
 import SettingsPage from './pages/SettingsPage'
+import IntervalPage from './pages/IntervalPage'
 
 const ProgressPage = lazy(() => import('./pages/ProgressPage'))
 
@@ -31,10 +32,24 @@ function Home() {
 export default function App() {
   const loading = useAppStore((s) => s.loading)
   const init = useAppStore((s) => s.init)
+  const theme = useAppStore((s) => s.settings.theme)
 
   useEffect(() => {
     init()
   }, [init])
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (theme === 'system') {
+      root.removeAttribute('data-theme')
+    } else {
+      root.setAttribute('data-theme', theme)
+    }
+    const prefersDark =
+      theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    const meta = document.querySelector('meta[name="theme-color"]')
+    meta?.setAttribute('content', prefersDark ? '#141316' : '#fafaf8')
+  }, [theme])
 
   if (loading) return <Splash />
 
@@ -47,6 +62,7 @@ export default function App() {
           <Route path="/plan" element={<PlanPage />} />
           <Route path="/training" element={<TrainingPage />} />
           <Route path="/training/:dayId" element={<WorkoutPage />} />
+          <Route path="/interval" element={<IntervalPage />} />
           <Route
             path="/progress"
             element={

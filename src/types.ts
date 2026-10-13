@@ -119,6 +119,8 @@ export interface WorkoutSession {
   startedAt: number
   finishedAt: number | null
   exercises: ExerciseLogEntry[]
+  /** Freitext-Notiz zur gesamten Session (z.B. Tagesform), optional. */
+  note?: string
 }
 
 export interface BodyWeightEntry {
@@ -126,6 +128,35 @@ export interface BodyWeightEntry {
   date: string
   weight: number
   createdAt: number
+}
+
+/** Persistenter Hinweis/Cue zu einer Übung (übungsbezogen, nicht sessionsbezogen). */
+export interface ExerciseNote {
+  exerciseId: string
+  note: string
+  updatedAt: number
+}
+
+export type WeightUnit = 'kg' | 'lb'
+export type ThemePreference = 'light' | 'dark' | 'system'
+
+/** Einzeiliger Key-Value-Store für App-weite Einstellungen (eine feste Zeile mit id='app'). */
+export interface AppSettings {
+  id: 'app'
+  weightUnit: WeightUnit
+  theme: ThemePreference
+  remindersEnabled: boolean
+  deloadEnabled: boolean
+  deloadIntervalWeeks: number
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  id: 'app',
+  weightUnit: 'kg',
+  theme: 'system',
+  remindersEnabled: false,
+  deloadEnabled: true,
+  deloadIntervalWeeks: 4,
 }
 
 /** Vollständiger Export aller lokalen Nutzerdaten (für Backup/Übertragung). */
@@ -136,4 +167,6 @@ export interface DataExport {
   customExercises: CustomExercise[]
   sessions: WorkoutSession[]
   bodyWeights: BodyWeightEntry[]
+  exerciseNotes?: ExerciseNote[]
+  settings?: AppSettings
 }

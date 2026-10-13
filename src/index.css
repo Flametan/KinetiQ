@@ -19,13 +19,55 @@
   --color-ink: #17171a;
   --color-dim: #6b6860;
   --color-line: #e3e0d8;
+  /* Card/modal surface — distinct from paper so cards can sit "above" the page */
+  --color-surface: #ffffff;
+  /* Text/icon color for content placed on a bg-ink fill (flips with ink) */
+  --color-on-ink: #ffffff;
 
   --font-display: 'Archivo Black', 'Source Sans 3', sans-serif;
   --font-body: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
+  color-scheme: light dark;
+}
+:root[data-theme='light'] {
   color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+/* Dark-Palette: explizit per data-theme="dark" (Einstellung) ... */
+:root[data-theme='dark'] {
+  --color-paper: #141316;
+  --color-panel2: #1f1e21;
+  --color-ink: #f2f1ec;
+  --color-dim: #8a8780;
+  --color-line: #38373b;
+  --color-brand-300: #e8957e;
+  --color-brand-400: #e26a4f;
+  --color-brand-500: #c23b22;
+  --color-brand-600: #d9492c;
+  --color-surface: #1f1e21;
+  --color-on-ink: #141316;
+}
+
+/* ...oder automatisch, wenn Darstellung="System" (kein data-theme gesetzt) und OS Dark bevorzugt */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-paper: #141316;
+    --color-panel2: #1f1e21;
+    --color-ink: #f2f1ec;
+    --color-dim: #8a8780;
+    --color-line: #38373b;
+    --color-brand-300: #e8957e;
+    --color-brand-400: #e26a4f;
+    --color-brand-500: #c23b22;
+    --color-brand-600: #d9492c;
+    --color-surface: #1f1e21;
+    --color-on-ink: #141316;
+  }
 }
 
 body {

@@ -3,6 +3,7 @@ import { exerciseOptionsByPattern } from '../data/exerciseOptions'
 import { movementPatternById, movementPatterns } from '../data/movementPatterns'
 import { useAppStore } from '../store/useAppStore'
 import { generateId } from '../utils/id'
+import { EQUIPMENT_OPTIONS, inferEquipment, type Equipment } from '../lib/equipment'
 import type { CustomExercise, ExerciseOption } from '../types'
 
 interface Props {
@@ -26,21 +27,29 @@ export default function ExercisePicker({
   const addCustomExercise = useAppStore((s) => s.addCustomExercise)
   const [addingCustom, setAddingCustom] = useState(false)
   const [customName, setCustomName] = useState('')
+  const [search, setSearch] = useState('')
+  const [equipmentFilter, setEquipmentFilter] = useState<Equipment | null>(null)
   const isFree = movementPatternIds.length === 0
   const [customPattern, setCustomPattern] = useState(movementPatternIds[0] ?? movementPatterns[0].id)
 
   const patternIds = isFree ? movementPatterns.map((p) => p.id) : movementPatternIds
 
   const groups = useMemo(() => {
+    const query = search.trim().toLowerCase()
     return patternIds
       .map((pid) => {
         const pattern = movementPatternById.get(pid)
         const builtIn = exerciseOptionsByPattern[pid] ?? []
         const custom = customExercises.filter((c) => c.movementPatternId === pid)
-        return { pattern, exercises: [...builtIn, ...custom] }
+        const exercises = [...builtIn, ...custom].filter((ex) => {
+          if (query && !ex.name.toLowerCase().includes(query)) return false
+          if (equipmentFilter && inferEquipment(ex.name) !== equipmentFilter) return false
+          return true
+        })
+        return { pattern, exercises }
       })
-      .filter((g) => g.pattern)
-  }, [patternIds, customExercises])
+      .filter((g) => g.pattern && g.exercises.length > 0)
+  }, [patternIds, customExercises, search, equipmentFilter])
 
   if (!open) return null
 
@@ -65,9 +74,9 @@ export default function ExercisePicker({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="max-h-[85dvh] w-full max-w-md overflow-hidden border-t-[3px] border-ink bg-white shadow-2xl"
+        className="max-h-[85dvh] w-full max-w-md overflow-hidden border-t-[3px] border-ink bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -86,7 +95,32 @@ export default function ExercisePicker({
           </button>
         </div>
 
-        <div className="scrollbar-none max-h-[60dvh] overflow-y-auto px-5 py-4">
+        <div className="border-b border-line px-5 py-3">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Übung suchen…"
+            className="mb-2.5 w-full border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
+          />
+          <div className="scrollbar-none flex gap-1.5 overflow-x-auto">
+            {EQUIPMENT_OPTIONS.map((eq) => (
+              <button
+                key={eq}
+                onClick={() => setEquipmentFilter(equipmentFilter === eq ? null : eq)}
+                className={`shrink-0 border px-2.5 py-1 text-[11px] font-semibold ${
+                  equipmentFilter === eq ? 'border-ink bg-ink text-on-ink' : 'border-line text-dim hover:border-ink hover:text-ink'
+                }`}
+              >
+                {eq}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="scrollbar-none max-h-[50dvh] overflow-y-auto px-5 py-4">
+          {groups.length === 0 && (
+            <p className="py-6 text-center text-sm text-dim">Keine Übungen gefunden.</p>
+          )}
           {groups.map(({ pattern, exercises }) => (
             <div key={pattern!.id} className="mb-5">
               {(isFree || movementPatternIds.length > 1) && (
@@ -101,8 +135,8 @@ export default function ExercisePicker({
                     onClick={() => handleSelect(ex)}
                     className={`flex items-center justify-between border px-4 py-3 text-left text-sm font-medium transition-colors ${
                       ex.id === currentExerciseId
-                        ? 'border-ink bg-ink text-white'
-                        : 'border-line bg-white text-ink hover:border-ink'
+                        ? 'border-ink bg-ink text-on-ink'
+                        : 'border-line bg-surface text-ink hover:border-ink'
                     }`}
                   >
                     <span>{ex.name}</span>
@@ -135,13 +169,13 @@ export default function ExercisePicker({
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
                   placeholder="Name der Übung"
-                  className="border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
+                  className="border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
                 />
                 {(isFree || movementPatternIds.length > 1) && (
                   <select
                     value={customPattern}
                     onChange={(e) => setCustomPattern(e.target.value)}
-                    className="border border-line bg-white px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                    className="border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
                   >
                     {(isFree ? movementPatterns : movementPatternIds.map((id) => movementPatternById.get(id)!)).map(
                       (p) => (
@@ -162,7 +196,7 @@ export default function ExercisePicker({
                   <button
                     onClick={handleAddCustom}
                     disabled={!customName.trim()}
-                    className="flex-1 bg-ink py-2 text-sm font-bold text-white disabled:opacity-40"
+                    className="flex-1 bg-ink py-2 text-sm font-bold text-on-ink disabled:opacity-40"
                   >
                     Hinzufügen
                   </button>

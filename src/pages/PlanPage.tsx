@@ -3,17 +3,21 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import ExercisePicker from '../components/ExercisePicker'
 import Barbell from '../components/Barbell'
-import { DAY_CYCLE_LABELS, getDayIndexInCycle } from '../lib/schedule'
+import { DAY_CYCLE_LABELS, getDayIndexInCycle, getMesocycleWeek, isDeloadWeek } from '../lib/schedule'
 import { generateId } from '../utils/id'
 import type { UserPlanSlot } from '../types'
 
 export default function PlanPage() {
   const plan = useAppStore((s) => s.activePlan)
+  const allPlans = useAppStore((s) => s.allPlans)
+  const settings = useAppStore((s) => s.settings)
   const updatePlan = useAppStore((s) => s.updatePlan)
-  const clearPlan = useAppStore((s) => s.clearPlan)
+  const switchPlan = useAppStore((s) => s.switchPlan)
+  const removePlan = useAppStore((s) => s.removePlan)
   const navigate = useNavigate()
   const [openDayId, setOpenDayId] = useState<string | null>(null)
   const [editingSlot, setEditingSlot] = useState<{ dayId: string; slot: UserPlanSlot } | null>(null)
+  const [showOtherPlans, setShowOtherPlans] = useState(false)
 
   if (!plan) return <Navigate to="/onboarding" replace />
 
@@ -62,14 +66,36 @@ export default function PlanPage() {
     }))
   }
 
-  async function handleNewPlan() {
-    if (confirm('Neuen Plan erstellen? Dein aktueller Plan wird ersetzt (der Trainingsverlauf bleibt erhalten).')) {
-      await clearPlan()
+  function moveSlot(dayId: string, index: number, direction: -1 | 1) {
+    updatePlan((p) => ({
+      ...p,
+      days: p.days.map((d) => {
+        if (d.id !== dayId) return d
+        const target = index + direction
+        if (target < 0 || target >= d.slots.length) return d
+        const slots = [...d.slots]
+        ;[slots[index], slots[target]] = [slots[target], slots[index]]
+        return { ...d, slots }
+      }),
+    }))
+  }
+
+  function handleNewPlan() {
+    if (confirm('Neuen Plan erstellen? Der aktuelle Plan wird archiviert (nicht gelöscht) und kann jederzeit wieder aktiviert werden. Der Trainingsverlauf bleibt in jedem Fall erhalten.')) {
       navigate('/onboarding')
     }
   }
 
+  async function handleDeletePlan(id: string, name: string) {
+    if (confirm(`"${name}" endgültig löschen? Der dazugehörige Trainingsverlauf bleibt erhalten, der Plan selbst nicht.`)) {
+      await removePlan(id)
+    }
+  }
+
   const todayIndex = getDayIndexInCycle(plan.createdAt)
+  const deloadActive = settings.deloadEnabled && isDeloadWeek(plan.createdAt, settings.deloadIntervalWeeks)
+  const mesoWeek = getMesocycleWeek(plan.createdAt)
+  const archivedPlans = allPlans.filter((p) => p.id !== plan.id)
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -80,6 +106,13 @@ export default function PlanPage() {
         </div>
         <Barbell plates={plan.daysPerWeek} size="md" />
       </header>
+
+      {deloadActive && (
+        <div className="border border-brand-400 bg-panel2 px-4 py-3">
+          <p className="text-sm font-semibold text-brand-400">Deload-Woche (Woche {mesoWeek})</p>
+          <p className="mt-0.5 text-xs text-dim">Gewichtsvorschläge im Training sind diese Woche automatisch ~10% reduziert.</p>
+        </div>
+      )}
 
       <section>
         <div className="flex gap-1.5">
@@ -108,7 +141,7 @@ export default function PlanPage() {
         {plan.days.map((day) => {
           const isOpen = openDayId === day.id
           return (
-            <div key={day.id} className="overflow-hidden border border-line bg-white">
+            <div key={day.id} className="overflow-hidden border border-line bg-surface">
               <button
                 onClick={() => setOpenDayId(isOpen ? null : day.id)}
                 className="flex w-full items-center justify-between px-4 py-3.5"
@@ -136,29 +169,56 @@ export default function PlanPage() {
                   {day.slots.map((slot, i) => {
                     const next = day.slots[i + 1]
                     const connected = !!next && !!slot.supersetGroup && slot.supersetGroup === next.supersetGroup
+                    const canReorder = !slot.supersetGroup
                     return (
                       <div key={slot.slotId} className="flex flex-col gap-2">
-                        <button
-                          onClick={() => setEditingSlot({ dayId: day.id, slot })}
-                          className={`flex items-center justify-between gap-3 border bg-panel2 px-3.5 py-3 text-left hover:border-ink ${
+                        <div
+                          className={`flex items-stretch gap-2 border bg-panel2 ${
                             slot.supersetGroup ? 'border-brand-300' : 'border-line'
                           }`}
                         >
-                          <div className="min-w-0">
-                            <p className="truncate text-xs text-dim">{slot.label}</p>
-                            <p className="truncate text-sm font-semibold text-ink">
-                              {slot.exerciseName ?? 'Übung wählen'}
-                            </p>
+                          <div className="flex flex-col border-r border-line">
+                            <button
+                              onClick={() => moveSlot(day.id, i, -1)}
+                              disabled={i === 0 || !canReorder}
+                              className="flex flex-1 items-center justify-center px-1.5 text-dim hover:text-ink disabled:opacity-25"
+                              aria-label="Nach oben verschieben"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                                <path d="m18 15-6-6-6 6" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => moveSlot(day.id, i, 1)}
+                              disabled={i === day.slots.length - 1 || !canReorder}
+                              className="flex flex-1 items-center justify-center border-t border-line px-1.5 text-dim hover:text-ink disabled:opacity-25"
+                              aria-label="Nach unten verschieben"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                                <path d="m6 9 6 6 6-6" />
+                              </svg>
+                            </button>
                           </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <span className="border border-line bg-white px-2 py-1 text-xs font-semibold text-dim">
-                              {slot.sets} × {slot.repsMin}-{slot.repsMax}
-                            </span>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-dim">
-                              <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                            </svg>
-                          </div>
-                        </button>
+                          <button
+                            onClick={() => setEditingSlot({ dayId: day.id, slot })}
+                            className="flex flex-1 items-center justify-between gap-3 px-3.5 py-3 text-left"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-xs text-dim">{slot.label}</p>
+                              <p className="truncate text-sm font-semibold text-ink">
+                                {slot.exerciseName ?? 'Übung wählen'}
+                              </p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              <span className="border border-line bg-surface px-2 py-1 text-xs font-semibold text-dim">
+                                {slot.sets} × {slot.repsMin}-{slot.repsMax}
+                              </span>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-dim">
+                                <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                              </svg>
+                            </div>
+                          </button>
+                        </div>
                         {next && (
                           <button
                             onClick={() => toggleSuperset(day.id, i)}
@@ -178,6 +238,49 @@ export default function PlanPage() {
           )
         })}
       </section>
+
+      {archivedPlans.length > 0 && (
+        <section>
+          <button
+            onClick={() => setShowOtherPlans((v) => !v)}
+            className="flex w-full items-center justify-between border border-line bg-surface px-4 py-3 text-left"
+          >
+            <span className="text-sm font-semibold text-ink">Andere Pläne ({archivedPlans.length})</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={`text-dim transition-transform ${showOtherPlans ? 'rotate-180' : ''}`}>
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          {showOtherPlans && (
+            <div className="mt-2 flex flex-col gap-2">
+              {archivedPlans.map((p) => (
+                <div key={p.id} className="flex items-center justify-between gap-2 border border-line bg-surface px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-ink">{p.variantName}</p>
+                    <p className="truncate text-xs text-dim">{p.splitLabel}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      onClick={() => switchPlan(p.id)}
+                      className="border border-ink px-3 py-1.5 text-xs font-semibold text-ink hover:bg-panel2"
+                    >
+                      Aktivieren
+                    </button>
+                    <button
+                      onClick={() => handleDeletePlan(p.id, p.variantName)}
+                      className="border border-line px-2 py-1.5 text-xs font-semibold text-dim hover:text-brand-400"
+                      aria-label="Plan löschen"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <button
         onClick={handleNewPlan}

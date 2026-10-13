@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
-import { getLastSetsForExercise, getPersonalRecords } from '../lib/history'
+import { getLastSetsForExercise, getPersonalRecords, suggestNextWeight } from '../lib/history'
 import { groupBySuperset } from '../lib/superset'
 import { suggestWarmupSets } from '../lib/warmup'
 import { playRestEndSound } from '../lib/sound'
 import { generateId } from '../utils/id'
+import { DEFAULT_BAR_WEIGHT, displayToKg, kgToDisplay, kgToUnit, unitLabel } from '../lib/units'
+import { isDeloadWeek } from '../lib/schedule'
 import ExercisePicker from '../components/ExercisePicker'
 import PlateCalculatorModal from '../components/PlateCalculatorModal'
 import type { ExerciseLogEntry, SetEntry, SetType } from '../types'
@@ -41,6 +43,10 @@ export default function WorkoutPage() {
   const sessions = useAppStore((s) => s.sessions)
   const addSession = useAppStore((s) => s.addSession)
   const updatePlan = useAppStore((s) => s.updatePlan)
+  const settings = useAppStore((s) => s.settings)
+  const exerciseNotes = useAppStore((s) => s.exerciseNotes)
+  const setExerciseNote = useAppStore((s) => s.setExerciseNote)
+  const unit = settings.weightUnit
   const navigate = useNavigate()
 
   const day = plan?.days.find((d) => d.id === dayId)
@@ -104,6 +110,9 @@ export default function WorkoutPage() {
   const [restTimers, setRestTimers] = useState<Record<string, number>>({})
   const [saved, setSaved] = useState(false)
   const [finishSummary, setFinishSummary] = useState<{ prs: { name: string; weight: number }[] } | null>(null)
+  const [sessionNoteOpen, setSessionNoteOpen] = useState(false)
+  const [sessionNote, setSessionNote] = useState('')
+  const [exerciseNoteSlotId, setExerciseNoteSlotId] = useState<string | null>(null)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -131,6 +140,9 @@ export default function WorkoutPage() {
 
   if (!plan) return <Navigate to="/onboarding" replace />
   if (!day) return <Navigate to="/training" replace />
+
+  const deloadActive = settings.deloadEnabled && isDeloadWeek(plan.createdAt, settings.deloadIntervalWeeks)
+  const deloadFactor = deloadActive ? 0.9 : 1
 
   const planSlot = (slotId: string) => day.slots.find((s) => s.slotId === slotId)!
   const restSecondsFor = (slotId: string) => planSlot(slotId).restSeconds ?? DEFAULT_REST_SECONDS
@@ -280,6 +292,7 @@ export default function WorkoutPage() {
       startedAt,
       finishedAt: Date.now(),
       exercises: completedExercises,
+      note: sessionNote.trim() || undefined,
     })
     setSaved(true)
     if (newPRs.length > 0) {
@@ -330,7 +343,7 @@ export default function WorkoutPage() {
               </svg>
             </button>
             {menuSlotId === ex.slotId && (
-              <div className="absolute right-0 z-10 mt-1 w-56 overflow-hidden border border-ink bg-white shadow-xl">
+              <div className="absolute right-0 z-10 mt-1 w-56 overflow-hidden border border-ink bg-surface shadow-xl">
                 <button
                   onClick={() => {
                     setPickerSlotId(ex.slotId)
@@ -347,7 +360,16 @@ export default function WorkoutPage() {
                   }}
                   className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
                 >
-                  {notesOpen.has(ex.slotId) ? 'Notiz ausblenden' : 'Notiz hinzufügen'}
+                  {notesOpen.has(ex.slotId) ? 'Session-Notiz ausblenden' : 'Session-Notiz hinzufügen'}
+                </button>
+                <button
+                  onClick={() => {
+                    setExerciseNoteSlotId(exerciseNoteSlotId === ex.slotId ? null : ex.slotId)
+                    setMenuSlotId(null)
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
+                >
+                  Übungs-Hinweis bearbeiten
                 </button>
                 <button
                   onClick={() => {
@@ -369,7 +391,7 @@ export default function WorkoutPage() {
                 </button>
                 <button
                   onClick={() => {
-                    setPlateModal({ weight: ex.sets.find((s) => s.weight > 0)?.weight ?? 20 })
+                    setPlateModal({ weight: ex.sets.find((s) => s.weight > 0)?.weight ?? displayToKg(DEFAULT_BAR_WEIGHT[unit], unit) })
                     setMenuSlotId(null)
                   }}
                   className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
@@ -381,16 +403,33 @@ export default function WorkoutPage() {
           </div>
         </div>
 
-        <p className="mb-2 truncate text-xs text-dim">
+        <p className="mb-1 truncate text-xs text-dim">
           {ex.label} · Ziel {ex.targetSets} × {ex.repsMin}-{ex.repsMax}
         </p>
+
+        {(() => {
+          const persistentNote = exerciseNotes.find((n) => n.exerciseId === ex.exerciseId)?.note
+          return persistentNote && exerciseNoteSlotId !== ex.slotId ? (
+            <p className="mb-2 truncate text-xs italic text-brand-400">{persistentNote}</p>
+          ) : null
+        })()}
+
+        {exerciseNoteSlotId === ex.slotId && (
+          <input
+            defaultValue={exerciseNotes.find((n) => n.exerciseId === ex.exerciseId)?.note ?? ''}
+            onBlur={(e) => setExerciseNote(ex.exerciseId, e.target.value)}
+            placeholder="Dauerhafter Hinweis, z.B. Sitzhöhe 4…"
+            autoFocus
+            className="mb-2 w-full border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
+          />
+        )}
 
         {notesOpen.has(ex.slotId) && (
           <input
             value={ex.notes ?? ''}
             onChange={(e) => updateNotes(ex.slotId, e.target.value)}
-            placeholder="Notizen hier hinzufügen…"
-            className="mb-2 w-full border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
+            placeholder="Notizen für dieses Training…"
+            className="mb-2 w-full border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
           />
         )}
 
@@ -399,7 +438,7 @@ export default function WorkoutPage() {
             <div className="grid grid-cols-[1.75rem_4.25rem_1fr_1fr_2.25rem] gap-2 px-1 pb-1.5 text-[10px] font-bold uppercase tracking-[.06em] text-dim">
               <span>Satz</span>
               <span>Vorherige</span>
-              <span>kg</span>
+              <span>{unitLabel(unit)}</span>
               <span>Wdh.</span>
               <span></span>
             </div>
@@ -408,6 +447,8 @@ export default function WorkoutPage() {
                 const prev = lastSets?.[i]
                 const type = set.type ?? 'normal'
                 const isPR = set.completed && type !== 'warmup' && priorBest > 0 && set.weight > priorBest
+                const suggestion =
+                  i === 0 && type === 'normal' ? suggestNextWeight(lastSets ?? null, ex.repsMax, deloadFactor) : null
                 return (
                   <div key={i} className="flex flex-col gap-1 border-t border-line pt-1.5 first:border-t-0 first:pt-0">
                     <div className="grid grid-cols-[1.75rem_4.25rem_1fr_1fr_2.25rem] items-center gap-2">
@@ -418,26 +459,31 @@ export default function WorkoutPage() {
                       >
                         {type === 'normal' ? set.setNumber : SET_TYPE_LABEL[type]}
                       </button>
-                      <span className="flex items-center gap-1 truncate text-xs text-dim">
-                        {prev ? `${prev.weight}kg × ${prev.reps}` : '—'}
-                        {isPR && (
-                          <span className="shrink-0 bg-brand-500 px-1.5 py-0.5 text-[9px] font-bold text-white">PR</span>
+                      <span className="flex flex-col truncate text-xs text-dim">
+                        <span className="flex items-center gap-1">
+                          {prev ? `${kgToDisplay(prev.weight, unit)}${unitLabel(unit)} × ${prev.reps}` : '—'}
+                          {isPR && (
+                            <span className="shrink-0 bg-brand-500 px-1.5 py-0.5 text-[9px] font-bold text-white">PR</span>
+                          )}
+                        </span>
+                        {suggestion !== null && (
+                          <span className="text-brand-400">Ziel: {kgToDisplay(suggestion, unit)}{unitLabel(unit)}</span>
                         )}
                       </span>
                       <input
                         type="number"
                         inputMode="decimal"
                         step="0.5"
-                        value={set.weight}
-                        onChange={(e) => updateSet(ex.slotId, i, { weight: Number(e.target.value) })}
-                        className="w-full border border-line bg-white px-2 py-2 text-center text-sm font-bold text-ink focus:border-ink focus:outline-none"
+                        value={kgToDisplay(set.weight, unit)}
+                        onChange={(e) => updateSet(ex.slotId, i, { weight: displayToKg(Number(e.target.value), unit) })}
+                        className="w-full border border-line bg-surface px-2 py-2 text-center text-sm font-bold text-ink focus:border-ink focus:outline-none"
                       />
                       <input
                         type="number"
                         inputMode="numeric"
                         value={set.reps}
                         onChange={(e) => updateSet(ex.slotId, i, { reps: Number(e.target.value) })}
-                        className="w-full border border-line bg-white px-2 py-2 text-center text-sm font-bold text-ink focus:border-ink focus:outline-none"
+                        className="w-full border border-line bg-surface px-2 py-2 text-center text-sm font-bold text-ink focus:border-ink focus:outline-none"
                       />
                       <button
                         onClick={() => {
@@ -447,7 +493,7 @@ export default function WorkoutPage() {
                           toggleSetCompleted(ex, i, isLast, groupKey)
                         }}
                         className={`flex h-9 w-9 items-center justify-center border-2 transition-colors ${
-                          set.completed ? 'border-ink bg-ink text-white' : 'border-ink text-ink hover:bg-panel2'
+                          set.completed ? 'border-ink bg-ink text-on-ink' : 'border-ink text-ink hover:bg-panel2'
                         }`}
                         aria-label="Satz erledigt"
                       >
@@ -464,7 +510,7 @@ export default function WorkoutPage() {
                             key={v}
                             onClick={() => updateSet(ex.slotId, i, { rpe: set.rpe === v ? undefined : v })}
                             className={`h-6 w-6 text-[11px] font-bold transition-colors ${
-                              set.rpe === v ? 'bg-ink text-white' : 'bg-panel2 text-dim hover:bg-line'
+                              set.rpe === v ? 'bg-ink text-on-ink' : 'bg-panel2 text-dim hover:bg-line'
                             }`}
                           >
                             {v}
@@ -518,14 +564,18 @@ export default function WorkoutPage() {
           <button
             onClick={finish}
             disabled={!hasAnyLoggedSet || saved}
-            className="bg-ink px-5 py-2 text-sm font-bold uppercase tracking-wide text-white disabled:opacity-40"
+            className="bg-ink px-5 py-2 text-sm font-bold uppercase tracking-wide text-on-ink disabled:opacity-40"
           >
             {saved ? 'Gespeichert ✓' : 'Beenden'}
           </button>
         </div>
         <div className="mt-4 flex items-center justify-between">
           <Stat label="Dauer" value={formatDuration(elapsed)} />
-          <Stat label="Volumen" value={`${totalVolume.toLocaleString('de-DE')} kg`} accent />
+          <Stat
+            label="Volumen"
+            value={`${Math.round(kgToUnit(totalVolume, unit)).toLocaleString('de-DE')} ${unitLabel(unit)}`}
+            accent
+          />
           <Stat label="Sätze" value={String(totalSets)} />
           <button
             onClick={cancelWorkout}
@@ -537,9 +587,29 @@ export default function WorkoutPage() {
             </svg>
           </button>
         </div>
+        {deloadActive && (
+          <p className="mt-3 border border-brand-400 bg-panel2 px-3 py-1.5 text-xs font-semibold text-brand-400">
+            Deload-Woche – Gewichte sind automatisch ~10% reduziert vorgeschlagen.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col px-4">
+        <button
+          onClick={() => setSessionNoteOpen((v) => !v)}
+          className="mt-4 self-start text-xs font-semibold text-dim hover:text-ink"
+        >
+          {sessionNoteOpen ? 'Trainingsnotiz ausblenden' : '+ Trainingsnotiz'}
+        </button>
+        {sessionNoteOpen && (
+          <textarea
+            value={sessionNote}
+            onChange={(e) => setSessionNote(e.target.value)}
+            placeholder="Wie war das Training? (optional)"
+            rows={2}
+            className="mt-2 w-full border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
+          />
+        )}
         {blocks.map((block, blockIdx) => {
           const isGrouped = block.length > 1
           const lastEx = block.at(-1)!
@@ -606,21 +676,21 @@ export default function WorkoutPage() {
       )}
 
       {finishSummary && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-6">
-          <div className="w-full max-w-sm border-t-[3px] border-ink bg-white p-6 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+          <div className="w-full max-w-sm border-t-[3px] border-ink bg-surface p-6 text-center">
             <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-400">Neue Bestwerte</p>
             <h2 className="font-display mt-2 text-2xl uppercase text-ink">Glückwunsch</h2>
             <div className="mt-4 flex flex-col gap-2 text-left">
               {finishSummary.prs.map((pr, i) => (
                 <div key={i} className="flex items-center justify-between bg-panel2 px-3 py-2.5">
                   <span className="text-sm font-medium text-ink">{pr.name}</span>
-                  <span className="bg-brand-500 px-2 py-0.5 text-sm font-bold text-white">{pr.weight} kg</span>
+                  <span className="bg-brand-500 px-2 py-0.5 text-sm font-bold text-white">{kgToDisplay(pr.weight, unit)} {unitLabel(unit)}</span>
                 </div>
               ))}
             </div>
             <button
               onClick={() => navigate('/progress')}
-              className="mt-5 w-full bg-ink py-3 text-sm font-bold uppercase tracking-wide text-white"
+              className="mt-5 w-full bg-ink py-3 text-sm font-bold uppercase tracking-wide text-on-ink"
             >
               Weiter
             </button>
