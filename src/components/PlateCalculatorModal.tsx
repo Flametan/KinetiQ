@@ -20,7 +20,7 @@ export default function PlateCalculatorModal({ open, onClose, initialWeight }: P
   const label = unitLabel(unit)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
       <div
         className="w-full max-w-md overflow-hidden border-t-[3px] border-ink bg-surface p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}

@@ -24,7 +24,7 @@ export default function DayEditSheet({
   onClosePicker,
 }: Props) {
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={onClose}>
       <div
         className="max-h-[88dvh] w-full max-w-md overflow-hidden border-t-[3px] border-ink bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
