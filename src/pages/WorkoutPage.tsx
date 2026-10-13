@@ -110,6 +110,7 @@ export default function WorkoutPage() {
   const [restTimers, setRestTimers] = useState<Record<string, number>>({})
   const [saved, setSaved] = useState(false)
   const [finishSummary, setFinishSummary] = useState<{ prs: { name: string; weight: number }[] } | null>(null)
+  const [saving, setSaving] = useState(false)
   const [sessionNoteOpen, setSessionNoteOpen] = useState(false)
   const [sessionNote, setSessionNote] = useState('')
   const [exerciseNoteSlotId, setExerciseNoteSlotId] = useState<string | null>(null)
@@ -274,6 +275,7 @@ export default function WorkoutPage() {
   }
 
   async function finish() {
+    setSaving(true)
     const completedExercises = exercises.filter((e) => e.exerciseId)
     const newPRs: { name: string; weight: number }[] = []
     for (const ex of completedExercises) {
@@ -333,7 +335,7 @@ export default function WorkoutPage() {
           <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setMenuSlotId(menuSlotId === ex.slotId ? null : ex.slotId)}
-              className="rounded-full p-1.5 text-dim hover:bg-panel2 hover:text-ink"
+              className="icon-btn press text-dim hover:bg-panel2 hover:text-ink"
               aria-label="Optionen"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -435,7 +437,7 @@ export default function WorkoutPage() {
 
         {ex.exerciseId ? (
           <>
-            <div className="grid grid-cols-[1.75rem_4.25rem_1fr_1fr_2.25rem] gap-2 px-1 pb-1.5 text-[10px] font-bold uppercase tracking-[.06em] text-dim">
+            <div className="grid grid-cols-[1.75rem_4.25rem_1fr_1fr_2.75rem] gap-2 px-1 pb-1.5 text-[10px] font-bold uppercase tracking-[.06em] text-dim">
               <span>Satz</span>
               <span>Vorherige</span>
               <span>{unitLabel(unit)}</span>
@@ -451,7 +453,7 @@ export default function WorkoutPage() {
                   i === 0 && type === 'normal' ? suggestNextWeight(lastSets ?? null, ex.repsMax, deloadFactor) : null
                 return (
                   <div key={i} className="flex flex-col gap-1 border-t border-line pt-1.5 first:border-t-0 first:pt-0">
-                    <div className="grid grid-cols-[1.75rem_4.25rem_1fr_1fr_2.25rem] items-center gap-2">
+                    <div className="grid grid-cols-[1.75rem_4.25rem_1fr_1fr_2.75rem] items-center gap-2">
                       <button
                         onClick={() => cycleSetType(ex.slotId, i)}
                         className={`font-display text-sm ${SET_TYPE_COLOR[type]}`}
@@ -491,25 +493,26 @@ export default function WorkoutPage() {
                           const isLast = block.at(-1)!.slotId === ex.slotId
                           const groupKey = ex.supersetGroup ?? ex.slotId
                           toggleSetCompleted(ex, i, isLast, groupKey)
+                          if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10)
                         }}
-                        className={`flex h-9 w-9 items-center justify-center border-2 transition-colors ${
+                        className={`press flex h-11 w-11 items-center justify-center border-2 transition-colors ${
                           set.completed ? 'border-ink bg-ink text-on-ink' : 'border-ink text-ink hover:bg-panel2'
                         }`}
                         aria-label="Satz erledigt"
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
                           <path d="M20 6 9 17l-5-5" />
                         </svg>
                       </button>
                     </div>
                     {rpeOpen.has(ex.slotId) && (
-                      <div className="flex items-center gap-1 pl-9">
-                        <span className="mr-1 text-[10px] font-semibold text-dim">RPE</span>
+                      <div className="flex items-center gap-1.5 pl-9">
+                        <span className="mr-0.5 text-[10px] font-semibold text-dim">RPE</span>
                         {RPE_OPTIONS.map((v) => (
                           <button
                             key={v}
                             onClick={() => updateSet(ex.slotId, i, { rpe: set.rpe === v ? undefined : v })}
-                            className={`h-6 w-6 text-[11px] font-bold transition-colors ${
+                            className={`press flex h-9 w-9 items-center justify-center text-[11px] font-bold transition-colors ${
                               set.rpe === v ? 'bg-ink text-on-ink' : 'bg-panel2 text-dim hover:bg-line'
                             }`}
                           >
@@ -563,10 +566,11 @@ export default function WorkoutPage() {
           </button>
           <button
             onClick={finish}
-            disabled={!hasAnyLoggedSet || saved}
-            className="bg-ink px-5 py-2 text-sm font-bold uppercase tracking-wide text-on-ink disabled:opacity-40"
+            disabled={!hasAnyLoggedSet || saved || saving}
+            aria-busy={saving}
+            className="press min-h-11 bg-ink px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-on-ink disabled:opacity-40"
           >
-            {saved ? 'Gespeichert ✓' : 'Beenden'}
+            {saved ? 'Gespeichert ✓' : saving ? 'Speichert…' : 'Beenden'}
           </button>
         </div>
         <div className="mt-4 flex items-center justify-between">
@@ -579,7 +583,7 @@ export default function WorkoutPage() {
           <Stat label="Sätze" value={String(totalSets)} />
           <button
             onClick={cancelWorkout}
-            className="rounded-full p-2 text-dim hover:bg-panel2 hover:text-ink"
+            className="icon-btn press text-dim hover:bg-panel2 hover:text-ink"
             aria-label="Training abbrechen"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -690,7 +694,7 @@ export default function WorkoutPage() {
             </div>
             <button
               onClick={() => navigate('/progress')}
-              className="mt-5 w-full bg-ink py-3 text-sm font-bold uppercase tracking-wide text-on-ink"
+              className="press mt-5 w-full bg-ink py-3 text-sm font-bold uppercase tracking-wide text-on-ink"
             >
               Weiter
             </button>

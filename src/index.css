@@ -108,3 +108,30 @@ input[type='number'] {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Entfernt die 300ms-Tap-Verzögerung auf mobilen Browsern für alle interaktiven Elemente. */
+button,
+a,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+/* Gemeinsame 44x44px-Mindestgröße für runde Icon-Buttons (Schließen, Optionen, Löschen, …). */
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .press {
+    transition: transform 0.1s ease;
+  }
+  .press:active {
+    transform: scale(0.96);
+  }
+}

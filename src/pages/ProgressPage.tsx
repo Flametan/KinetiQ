@@ -318,7 +318,7 @@ function BodyWeightView({ unit }: { unit: WeightUnit }) {
         <button
           onClick={submit}
           disabled={!weight}
-          className="bg-ink px-4 py-2 text-sm font-bold text-on-ink disabled:opacity-40"
+          className="press bg-ink px-4 py-2 text-sm font-bold text-on-ink disabled:opacity-40"
         >
           Eintragen
         </button>
@@ -356,10 +356,10 @@ function BodyWeightView({ unit }: { unit: WeightUnit }) {
 
           <div className="flex flex-col gap-1.5">
             {[...bodyWeights].reverse().map((b) => (
-              <div key={b.id} className="flex items-center justify-between border border-line bg-surface px-3.5 py-2.5">
+              <div key={b.id} className="flex items-center justify-between border border-line bg-surface py-1 pl-3.5 pr-1.5">
                 <span className="text-sm font-semibold text-ink">{kgToDisplay(b.weight, unit)} {unitLabel(unit)}</span>
                 <span className="text-xs text-dim">{formatFullDate(b.date)}</span>
-                <button onClick={() => removeBodyWeight(b.id)} className="text-dim hover:text-brand-400" aria-label="Löschen">
+                <button onClick={() => removeBodyWeight(b.id)} className="icon-btn press text-dim hover:bg-panel2 hover:text-brand-400" aria-label="Löschen">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
                   </svg>

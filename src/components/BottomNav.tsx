@@ -16,7 +16,7 @@ export default function BottomNav() {
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-semibold transition-colors ${
+              `press flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-semibold transition-colors ${
                 isActive ? 'text-brand-400' : 'text-dim hover:text-ink'
               }`
             }

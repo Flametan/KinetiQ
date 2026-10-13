@@ -43,7 +43,7 @@ export default function OnboardingPage() {
             <button
               key={s.daysPerWeek}
               onClick={() => setDaysPerWeek(s.daysPerWeek)}
-              className={`flex flex-col items-center justify-center gap-2.5 border py-4 transition-colors ${
+              className={`press flex flex-col items-center justify-center gap-2.5 border py-4 transition-colors ${
                 daysPerWeek === s.daysPerWeek
                   ? 'border-ink bg-ink text-on-ink'
                   : 'border-line bg-surface text-ink hover:border-ink'
@@ -64,7 +64,7 @@ export default function OnboardingPage() {
             <button
               key={variant.id}
               onClick={() => choose(variant)}
-              className="border border-line bg-surface p-4 text-left transition-colors hover:border-ink"
+              className="press border border-line bg-surface p-4 text-left transition-colors hover:border-ink"
             >
               <div className="flex items-center justify-between gap-3">
                 <p className="font-display text-base text-ink">{variant.name}</p>

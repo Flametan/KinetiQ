@@ -27,7 +27,7 @@ export default function PlateCalculatorModal({ open, onClose, initialWeight }: P
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-base text-ink">Plattenrechner</h2>
-          <button onClick={onClose} className="rounded-full p-2 text-dim hover:bg-panel2 hover:text-ink" aria-label="Schließen">
+          <button onClick={onClose} className="icon-btn press text-dim hover:bg-panel2 hover:text-ink" aria-label="Schließen">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>

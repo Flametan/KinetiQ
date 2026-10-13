@@ -75,7 +75,7 @@ export default function TrainingPage() {
             <button
               key={day.id}
               onClick={() => navigate(`/training/${day.id}`)}
-              className={`flex items-center justify-between border p-4 text-left transition-colors ${
+              className={`press flex items-center justify-between border p-4 text-left transition-colors ${
                 isSuggested ? 'border-ink bg-surface' : 'border-line bg-surface hover:border-ink'
               }`}
             >

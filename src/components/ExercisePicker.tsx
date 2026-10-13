@@ -86,7 +86,7 @@ export default function ExercisePicker({
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-2 text-dim hover:bg-panel2 hover:text-ink"
+            className="icon-btn press text-dim hover:bg-panel2 hover:text-ink"
             aria-label="Schließen"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -133,7 +133,7 @@ export default function ExercisePicker({
                   <button
                     key={ex.id}
                     onClick={() => handleSelect(ex)}
-                    className={`flex items-center justify-between border px-4 py-3 text-left text-sm font-medium transition-colors ${
+                    className={`press flex items-center justify-between border px-4 py-3 text-left text-sm font-medium transition-colors ${
                       ex.id === currentExerciseId
                         ? 'border-ink bg-ink text-on-ink'
                         : 'border-line bg-surface text-ink hover:border-ink'
@@ -196,7 +196,7 @@ export default function ExercisePicker({
                   <button
                     onClick={handleAddCustom}
                     disabled={!customName.trim()}
-                    className="flex-1 bg-ink py-2 text-sm font-bold text-on-ink disabled:opacity-40"
+                    className="press flex-1 bg-ink py-2 text-sm font-bold text-on-ink disabled:opacity-40"
                   >
                     Hinzufügen
                   </button>

@@ -177,11 +177,11 @@ export default function PlanPage() {
                             slot.supersetGroup ? 'border-brand-300' : 'border-line'
                           }`}
                         >
-                          <div className="flex flex-col border-r border-line">
+                          <div className="flex w-11 shrink-0 flex-col border-r border-line">
                             <button
                               onClick={() => moveSlot(day.id, i, -1)}
                               disabled={i === 0 || !canReorder}
-                              className="flex flex-1 items-center justify-center px-1.5 text-dim hover:text-ink disabled:opacity-25"
+                              className="press flex min-h-[22px] flex-1 items-center justify-center text-dim hover:text-ink disabled:opacity-25"
                               aria-label="Nach oben verschieben"
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
@@ -191,7 +191,7 @@ export default function PlanPage() {
                             <button
                               onClick={() => moveSlot(day.id, i, 1)}
                               disabled={i === day.slots.length - 1 || !canReorder}
-                              className="flex flex-1 items-center justify-center border-t border-line px-1.5 text-dim hover:text-ink disabled:opacity-25"
+                              className="press flex min-h-[22px] flex-1 items-center justify-center border-t border-line text-dim hover:text-ink disabled:opacity-25"
                               aria-label="Nach unten verschieben"
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
@@ -201,7 +201,7 @@ export default function PlanPage() {
                           </div>
                           <button
                             onClick={() => setEditingSlot({ dayId: day.id, slot })}
-                            className="flex flex-1 items-center justify-between gap-3 px-3.5 py-3 text-left"
+                            className="press flex flex-1 items-center justify-between gap-3 px-3.5 py-3 text-left"
                           >
                             <div className="min-w-0">
                               <p className="truncate text-xs text-dim">{slot.label}</p>

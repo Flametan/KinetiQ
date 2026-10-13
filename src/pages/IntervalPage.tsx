@@ -111,7 +111,7 @@ export default function IntervalPage() {
           <>
             <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-400">Fertig</p>
             <h1 className="font-display text-3xl uppercase text-ink">Intervall-Training beendet</h1>
-            <button onClick={stop} className="mt-4 bg-ink px-6 py-3 text-sm font-bold uppercase tracking-wide text-on-ink">
+            <button onClick={stop} className="press mt-4 bg-ink px-6 py-3 text-sm font-bold uppercase tracking-wide text-on-ink">
               Zurück
             </button>
           </>
@@ -181,7 +181,7 @@ export default function IntervalPage() {
             placeholder="z.B. Burpees"
             className="flex-1 border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
           />
-          <button onClick={addStation} className="bg-ink px-4 text-sm font-bold text-on-ink">
+          <button onClick={addStation} className="press bg-ink px-4 text-sm font-bold text-on-ink">
             +
           </button>
         </div>
@@ -222,7 +222,7 @@ export default function IntervalPage() {
         <button
           onClick={start}
           disabled={stations.length === 0}
-          className="flex-1 bg-ink py-3 text-sm font-bold uppercase tracking-wide text-on-ink disabled:opacity-40"
+          className="press flex-1 bg-ink py-3 text-sm font-bold uppercase tracking-wide text-on-ink disabled:opacity-40"
         >
           Starten
         </button>

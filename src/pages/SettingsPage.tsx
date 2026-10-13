@@ -196,7 +196,7 @@ export default function SettingsPage() {
                 </div>
                 <button
                   onClick={() => removeCustomExercise(ex.id)}
-                  className="rounded-full p-2 text-dim hover:bg-panel2 hover:text-brand-400"
+                  className="icon-btn press text-dim hover:bg-panel2 hover:text-brand-400"
                   aria-label="Löschen"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -241,7 +241,7 @@ export default function SettingsPage() {
         </p>
         <button
           onClick={resetAll}
-          className="mt-3 w-full border border-ink bg-ink py-2.5 text-sm font-bold text-on-ink hover:bg-brand-500 hover:text-white"
+          className="press mt-3 w-full border border-ink bg-ink py-2.5 text-sm font-bold text-on-ink hover:bg-brand-500 hover:text-white"
         >
           Alle Daten zurücksetzen
         </button>
@@ -284,7 +284,7 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: b
   return (
     <button
       onClick={() => onChange(!checked)}
-      className={`relative h-6 w-11 shrink-0 border transition-colors ${checked ? 'border-ink bg-ink' : 'border-line bg-surface'}`}
+      className={`press relative h-6 w-11 shrink-0 border transition-colors ${checked ? 'border-ink bg-ink' : 'border-line bg-surface'}`}
       role="switch"
       aria-checked={checked}
     >
