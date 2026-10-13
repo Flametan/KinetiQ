@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useAppStore } from './store/useAppStore'
 import Layout from './components/Layout'
 import OnboardingPage from './pages/OnboardingPage'
@@ -10,6 +10,12 @@ import SettingsPage from './pages/SettingsPage'
 import IntervalPage from './pages/IntervalPage'
 
 const ProgressPage = lazy(() => import('./pages/ProgressPage'))
+
+// Vom jeweiligen Vite-Build gesetzt (vite.config.ts vs. vite.config.preview.ts).
+declare const __STANDALONE_FILE__: boolean
+// Über file:// wirft BrowserRouter einen SecurityError (History-API + opaker Origin),
+// daher für die lokal per Doppelklick testbare Single-File-Version HashRouter nutzen.
+const Router = __STANDALONE_FILE__ ? HashRouter : BrowserRouter
 
 function Splash() {
   return (
@@ -54,7 +60,7 @@ export default function App() {
   if (loading) return <Splash />
 
   return (
-    <BrowserRouter>
+    <Router>
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -75,6 +81,6 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
-    </BrowserRouter>
+    </Router>
   )
 }
