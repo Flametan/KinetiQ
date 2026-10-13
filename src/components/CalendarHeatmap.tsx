@@ -28,7 +28,7 @@ export default function CalendarHeatmap({ trainedDays, weeks = 12 }: Props) {
       <div className="flex gap-[3px]">
         <div className="flex flex-col gap-[3px] pr-1">
           {WEEKDAY_LABELS.map((label, i) => (
-            <div key={i} className="flex h-3 w-6 items-center text-[9px] text-slate-600">
+            <div key={i} className="flex h-3 w-6 items-center text-[9px] text-dim">
               {label}
             </div>
           ))}
@@ -42,9 +42,9 @@ export default function CalendarHeatmap({ trainedDays, weeks = 12 }: Props) {
                 <div
                   key={di}
                   title={new Date(ts).toLocaleDateString('de-DE')}
-                  className={`h-3 w-3 rounded-[3px] ${
-                    isFuture ? 'bg-transparent' : trained ? 'bg-brand-500' : 'bg-white/5'
-                  } ${ts === today ? 'ring-1 ring-brand-300' : ''}`}
+                  className={`h-3 w-3 rounded-[1px] ${
+                    isFuture ? 'bg-transparent' : trained ? 'bg-brand-500' : 'bg-panel2'
+                  } ${ts === today ? 'ring-1 ring-ink' : ''}`}
                 />
               )
             })}

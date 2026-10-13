@@ -75,25 +75,25 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-6 pb-10">
       <header className="pt-2">
-        <p className="text-xs font-medium text-brand-400">Einstellungen</p>
-        <h1 className="mt-0.5 text-xl font-bold text-white">Mehr</h1>
+        <p className="text-xs font-bold uppercase tracking-[.1em] text-brand-400">Einstellungen</p>
+        <h1 className="font-display mt-1 text-[26px] uppercase leading-[0.95] text-ink">Mehr</h1>
       </header>
 
       {plan && (
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Aktueller Plan</p>
-          <p className="mt-1 text-sm text-white">
+        <section className="border border-line bg-white p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-dim">Aktueller Plan</p>
+          <p className="mt-1 text-sm font-medium text-ink">
             {plan.splitLabel} · {plan.variantName}
           </p>
         </section>
       )}
 
       <section>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-dim">
           Eigene Übungen ({customExercises.length})
         </p>
         {customExercises.length === 0 ? (
-          <p className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-500">
+          <p className="border border-line bg-white p-4 text-sm text-dim">
             Du hast noch keine eigenen Übungen angelegt. Das geht direkt bei der Übungsauswahl im Plan.
           </p>
         ) : (
@@ -101,15 +101,15 @@ export default function SettingsPage() {
             {customExercises.map((ex) => (
               <div
                 key={ex.id}
-                className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+                className="flex items-center justify-between border border-line bg-white px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-white">{ex.name}</p>
-                  <p className="text-xs text-slate-500">{movementPatternById.get(ex.movementPatternId)?.name}</p>
+                  <p className="text-sm font-semibold text-ink">{ex.name}</p>
+                  <p className="text-xs text-dim">{movementPatternById.get(ex.movementPatternId)?.name}</p>
                 </div>
                 <button
                   onClick={() => removeCustomExercise(ex.id)}
-                  className="rounded-lg p-2 text-slate-500 hover:bg-white/5 hover:text-red-400"
+                  className="rounded-full p-2 text-dim hover:bg-panel2 hover:text-brand-400"
                   aria-label="Löschen"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -122,45 +122,45 @@ export default function SettingsPage() {
         )}
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <p className="text-sm font-semibold text-white">Daten sichern</p>
-        <p className="mt-1 text-xs text-slate-400">
+      <section className="border border-line bg-white p-4">
+        <p className="text-sm font-semibold text-ink">Daten sichern</p>
+        <p className="mt-1 text-xs text-dim">
           Alle Daten liegen nur lokal auf diesem Gerät. Exportiere regelmäßig ein Backup oder übertrage
           deine Daten auf ein neues Gerät per Export/Import.
         </p>
         <div className="mt-3 flex gap-2">
           <button
             onClick={handleExport}
-            className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm font-medium text-slate-200 hover:border-white/20"
+            className="flex-1 border border-line py-2.5 text-sm font-semibold text-ink hover:border-ink"
           >
             Exportieren
           </button>
           <button
             onClick={handleImportClick}
-            className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm font-medium text-slate-200 hover:border-white/20"
+            className="flex-1 border border-line py-2.5 text-sm font-semibold text-ink hover:border-ink"
           >
             Importieren
           </button>
         </div>
         <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFileChange} className="hidden" />
-        {importError && <p className="mt-2 text-xs text-red-400">{importError}</p>}
-        {importSuccess && <p className="mt-2 text-xs text-brand-300">Import erfolgreich.</p>}
+        {importError && <p className="mt-2 text-xs text-brand-400">{importError}</p>}
+        {importSuccess && <p className="mt-2 text-xs text-brand-400">Import erfolgreich.</p>}
       </section>
 
-      <section className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
-        <p className="text-sm font-semibold text-red-300">Gefahrenzone</p>
-        <p className="mt-1 text-xs text-red-300/70">
+      <section className="border-2 border-ink bg-white p-4">
+        <p className="text-sm font-bold uppercase tracking-wide text-ink">Gefahrenzone</p>
+        <p className="mt-1 text-xs text-dim">
           Löscht Plan, eigene Übungen und den gesamten Trainingsverlauf von diesem Gerät.
         </p>
         <button
           onClick={resetAll}
-          className="mt-3 w-full rounded-xl border border-red-500/30 py-2.5 text-sm font-medium text-red-300 hover:bg-red-500/10"
+          className="mt-3 w-full border border-ink bg-ink py-2.5 text-sm font-bold text-white hover:bg-brand-500"
         >
           Alle Daten zurücksetzen
         </button>
       </section>
 
-      <p className="text-center text-xs text-slate-600">
+      <p className="text-center text-xs text-dim">
         KinetiQ · Daten werden lokal auf diesem Gerät gespeichert
       </p>
     </div>

@@ -65,8 +65,8 @@ export default function ProgressPage() {
   return (
     <div className="flex flex-col gap-6 pb-10">
       <header className="pt-2">
-        <p className="text-xs font-medium text-brand-400">Fortschritt</p>
-        <h1 className="mt-0.5 text-xl font-bold text-white">Dein Trainingsverlauf</h1>
+        <p className="text-xs font-bold uppercase tracking-[.1em] text-brand-400">Fortschritt</p>
+        <h1 className="font-display mt-1 text-[26px] uppercase leading-[0.95] text-ink">Dein Trainingsverlauf</h1>
       </header>
 
       <section className="grid grid-cols-3 gap-3">
@@ -76,7 +76,7 @@ export default function ProgressPage() {
       </section>
 
       {sessions.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-slate-400">
+        <div className="border border-line bg-white p-6 text-center text-sm text-dim">
           Noch keine Trainings geloggt. Starte dein erstes Training, um hier deinen Fortschritt zu sehen.
         </div>
       ) : (
@@ -86,8 +86,8 @@ export default function ProgressPage() {
               <button
                 key={v.id}
                 onClick={() => setView(v.id)}
-                className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
-                  view === v.id ? 'bg-brand-500 text-white' : 'bg-white/5 text-slate-400 hover:text-white'
+                className={`shrink-0 px-3.5 py-2 text-sm font-semibold transition-colors ${
+                  view === v.id ? 'bg-ink text-white' : 'bg-panel2 text-dim hover:text-ink'
                 }`}
               >
                 {v.label}
@@ -98,13 +98,13 @@ export default function ProgressPage() {
           {view === 'exercise' && (
             <>
               <section>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-dim">
                   Übung
                 </label>
                 <select
                   value={activeId ?? ''}
                   onChange={(e) => setSelectedId(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-3 text-sm text-white focus:border-brand-400 focus:outline-none"
+                  className="w-full border border-line bg-white px-3.5 py-3 text-sm text-ink focus:border-ink focus:outline-none"
                 >
                   {loggedExercises.map((e) => (
                     <option key={e.id} value={e.id}>
@@ -123,24 +123,24 @@ export default function ProgressPage() {
               )}
 
               {chartData.length > 0 && (
-                <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <section className="border border-line bg-white p-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-bold uppercase tracking-wide text-dim">
                       {metric === 'maxWeight' ? 'Maximalgewicht pro Training (kg)' : 'Geschätztes 1RM pro Training (kg)'}
                     </p>
-                    <div className="flex gap-1 rounded-lg border border-white/10 p-0.5">
+                    <div className="flex gap-1 border border-line p-0.5">
                       <button
                         onClick={() => setMetric('maxWeight')}
-                        className={`rounded px-2 py-1 text-[11px] font-medium ${
-                          metric === 'maxWeight' ? 'bg-brand-500 text-white' : 'text-slate-500'
+                        className={`px-2 py-1 text-[11px] font-bold ${
+                          metric === 'maxWeight' ? 'bg-ink text-white' : 'text-dim'
                         }`}
                       >
                         Gewicht
                       </button>
                       <button
                         onClick={() => setMetric('estimated1RM')}
-                        className={`rounded px-2 py-1 text-[11px] font-medium ${
-                          metric === 'estimated1RM' ? 'bg-brand-500 text-white' : 'text-slate-500'
+                        className={`px-2 py-1 text-[11px] font-bold ${
+                          metric === 'estimated1RM' ? 'bg-ink text-white' : 'text-dim'
                         }`}
                       >
                         1RM
@@ -150,10 +150,10 @@ export default function ProgressPage() {
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData} margin={{ top: 5, right: 8, bottom: 0, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                        <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e3e0d8" />
+                        <XAxis dataKey="label" tick={{ fill: '#6b6860', fontSize: 11 }} axisLine={false} tickLine={false} />
                         <YAxis
-                          tick={{ fill: '#64748b', fontSize: 11 }}
+                          tick={{ fill: '#6b6860', fontSize: 11 }}
                           axisLine={false}
                           tickLine={false}
                           width={36}
@@ -161,20 +161,21 @@ export default function ProgressPage() {
                         />
                         <Tooltip
                           contentStyle={{
-                            background: '#0f172a',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: 12,
+                            background: '#17171a',
+                            border: 'none',
+                            borderRadius: 0,
                             fontSize: 12,
                           }}
-                          labelStyle={{ color: '#94a3b8' }}
+                          labelStyle={{ color: '#fafaf8' }}
+                          itemStyle={{ color: '#fafaf8' }}
                           formatter={(value) => [`${Math.round(Number(value) * 10) / 10} kg`, '']}
                         />
                         <Line
                           type="monotone"
                           dataKey={metric}
-                          stroke="#598eff"
+                          stroke="#c23b22"
                           strokeWidth={2.5}
-                          dot={{ fill: '#598eff', r: 3 }}
+                          dot={{ fill: '#c23b22', r: 3 }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -183,14 +184,14 @@ export default function ProgressPage() {
               )}
 
               <section className="flex flex-col gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Einträge</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-dim">Einträge</p>
                 {sessionsForExercise.map((session) => {
                   const entry = session.exercises.find((e) => e.exerciseId === activeId)!
                   return (
-                    <div key={session.id} className="rounded-xl border border-white/10 bg-white/5 p-3.5">
+                    <div key={session.id} className="border border-line bg-white p-3.5">
                       <div className="mb-2 flex items-center justify-between">
-                        <p className="text-sm font-medium text-white">{session.dayName}</p>
-                        <p className="text-xs text-slate-500">{formatFullDate(session.date)}</p>
+                        <p className="text-sm font-semibold text-ink">{session.dayName}</p>
+                        <p className="text-xs text-dim">{formatFullDate(session.date)}</p>
                       </div>
                       <SetChips sets={entry.sets} />
                     </div>
@@ -204,16 +205,16 @@ export default function ProgressPage() {
 
           {view === 'calendar' && (
             <section className="flex flex-col gap-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <div className="border border-line bg-white p-4">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-dim">
                   Trainings-Konsistenz (letzte 12 Wochen)
                 </p>
                 <CalendarHeatmap trainedDays={trainedDays} weeks={12} />
               </div>
-              <p className="text-center text-sm text-slate-400">
+              <p className="text-center text-sm text-dim">
                 {streak > 0 ? (
                   <>
-                    🔥 <span className="font-semibold text-white">{streak}</span> Tage in Folge trainiert
+                    <span className="font-display text-ink">{streak}</span> Tage in Folge trainiert
                   </>
                 ) : (
                   'Starte heute deine nächste Serie.'
@@ -240,7 +241,7 @@ function MuscleBalanceView({ entries }: { entries: ReturnType<typeof getMuscleBa
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-slate-400">
+      <div className="border border-line bg-white p-6 text-center text-sm text-dim">
         Noch keine Trainings in den letzten 7 Tagen – Balance erscheint hier, sobald du loslegst.
       </div>
     )
@@ -248,21 +249,21 @@ function MuscleBalanceView({ entries }: { entries: ReturnType<typeof getMuscleBa
 
   return (
     <section className="flex flex-col gap-5">
-      <p className="text-xs text-slate-500">Arbeitssätze je Bewegungsmuster, letzte 7 Tage</p>
+      <p className="text-xs text-dim">Arbeitssätze je Bewegungsmuster, letzte 7 Tage</p>
       {(['Oberkörper', 'Unterkörper'] as const).map((category) =>
         grouped[category].length === 0 ? null : (
           <div key={category} className="flex flex-col gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{category}</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-dim">{category}</p>
             {grouped[category].map((entry) => (
               <div key={entry.movementPatternId} className="flex items-center gap-3">
-                <span className="w-36 shrink-0 truncate text-sm text-slate-300">{entry.name}</span>
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/5">
+                <span className="w-36 shrink-0 truncate text-sm text-ink">{entry.name}</span>
+                <div className="h-2.5 flex-1 bg-panel2">
                   <div
-                    className="h-full rounded-full bg-brand-500"
+                    className="h-full bg-brand-500"
                     style={{ width: `${(entry.sets / max) * 100}%` }}
                   />
                 </div>
-                <span className="w-16 shrink-0 text-right text-xs text-slate-500">{entry.sets} Sätze</span>
+                <span className="w-16 shrink-0 text-right text-xs text-dim">{entry.sets} Sätze</span>
               </div>
             ))}
           </div>
@@ -305,41 +306,42 @@ function BodyWeightView() {
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
           placeholder="Heutiges Gewicht (kg)"
-          className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3.5 py-3 text-sm text-white placeholder:text-slate-500 focus:border-brand-400 focus:outline-none"
+          className="flex-1 border border-line bg-white px-3.5 py-3 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
         />
         <button
           onClick={submit}
           disabled={!weight}
-          className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          className="bg-ink px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
         >
           Eintragen
         </button>
       </div>
 
       {chartData.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-slate-400">
+        <div className="border border-line bg-white p-6 text-center text-sm text-dim">
           Noch kein Körpergewicht erfasst.
         </div>
       ) : (
         <>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="border border-line bg-white p-4">
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 8, bottom: 0, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                  <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e3e0d8" />
+                  <XAxis dataKey="label" tick={{ fill: '#6b6860', fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis
-                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    tick={{ fill: '#6b6860', fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
                     width={32}
                     domain={['dataMin - 1', 'dataMax + 1']}
                   />
                   <Tooltip
-                    contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12 }}
-                    labelStyle={{ color: '#94a3b8' }}
+                    contentStyle={{ background: '#17171a', border: 'none', borderRadius: 0, fontSize: 12 }}
+                    labelStyle={{ color: '#fafaf8' }}
+                    itemStyle={{ color: '#fafaf8' }}
                   />
-                  <Line type="monotone" dataKey="weight" stroke="#598eff" strokeWidth={2.5} dot={{ fill: '#598eff', r: 3 }} />
+                  <Line type="monotone" dataKey="weight" stroke="#c23b22" strokeWidth={2.5} dot={{ fill: '#c23b22', r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -347,10 +349,10 @@ function BodyWeightView() {
 
           <div className="flex flex-col gap-1.5">
             {[...bodyWeights].reverse().map((b) => (
-              <div key={b.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5">
-                <span className="text-sm text-white">{b.weight} kg</span>
-                <span className="text-xs text-slate-500">{formatFullDate(b.date)}</span>
-                <button onClick={() => removeBodyWeight(b.id)} className="text-slate-600 hover:text-red-400" aria-label="Löschen">
+              <div key={b.id} className="flex items-center justify-between border border-line bg-white px-3.5 py-2.5">
+                <span className="text-sm font-semibold text-ink">{b.weight} kg</span>
+                <span className="text-xs text-dim">{formatFullDate(b.date)}</span>
+                <button onClick={() => removeBodyWeight(b.id)} className="text-dim hover:text-brand-400" aria-label="Löschen">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
                   </svg>
@@ -369,19 +371,19 @@ function SessionHistoryList({ sessions }: { sessions: WorkoutSession[] }) {
 
   return (
     <section className="flex flex-col gap-2">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Alle Trainings</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-dim">Alle Trainings</p>
       {sessions.map((session) => {
         const isOpen = openId === session.id
         const totalSets = session.exercises.reduce((sum, e) => sum + e.sets.filter((s) => s.completed).length, 0)
         return (
-          <div key={session.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+          <div key={session.id} className="overflow-hidden border border-line bg-white">
             <button
               onClick={() => setOpenId(isOpen ? null : session.id)}
               className="flex w-full items-center justify-between px-4 py-3.5"
             >
               <div className="text-left">
-                <p className="font-semibold text-white">{session.dayName}</p>
-                <p className="text-xs text-slate-500">
+                <p className="font-display text-base text-ink">{session.dayName}</p>
+                <p className="text-xs text-dim">
                   {formatFullDate(session.date)} · {session.exercises.length} Übungen · {totalSets} Sätze
                 </p>
               </div>
@@ -394,17 +396,17 @@ function SessionHistoryList({ sessions }: { sessions: WorkoutSession[] }) {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className={`shrink-0 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                className={`shrink-0 text-dim transition-transform ${isOpen ? 'rotate-180' : ''}`}
               >
                 <path d="m6 9 6 6 6-6" />
               </svg>
             </button>
             {isOpen && (
-              <div className="flex flex-col gap-3 border-t border-white/10 px-4 py-3.5">
+              <div className="flex flex-col gap-3 border-t border-line px-4 py-3.5">
                 {session.exercises.map((entry) => (
                   <div key={entry.slotId}>
-                    <p className="mb-1.5 text-xs text-slate-500">{entry.label}</p>
-                    <p className="mb-1.5 text-sm font-medium text-white">{entry.exerciseName}</p>
+                    <p className="mb-1.5 text-xs text-dim">{entry.label}</p>
+                    <p className="mb-1.5 text-sm font-semibold text-ink">{entry.exerciseName}</p>
                     <SetChips sets={entry.sets} />
                   </div>
                 ))}
@@ -423,8 +425,8 @@ function SetChips({ sets }: { sets: WorkoutSession['exercises'][number]['sets'] 
       {sets.map((set, i) => (
         <span
           key={i}
-          className={`rounded-md px-2 py-1 text-xs ${
-            set.completed ? 'bg-brand-500/15 text-brand-200' : 'bg-white/5 text-slate-500'
+          className={`px-2 py-1 text-xs font-medium ${
+            set.completed ? 'bg-brand-500 text-white' : 'bg-panel2 text-dim'
           }`}
         >
           {set.reps} × {set.weight}kg
@@ -441,9 +443,9 @@ function formatFullDate(iso: string) {
 
 function StatCard({ label, value, isText }: { label: string; value: number | string; isText?: boolean }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <p className={`font-bold text-white ${isText ? 'text-lg' : 'text-2xl'}`}>{value}</p>
-      <p className="mt-0.5 text-xs text-slate-500">{label}</p>
+    <div className="border border-line bg-white p-4">
+      <p className={`font-display text-ink ${isText ? 'text-lg' : 'text-2xl'}`}>{value}</p>
+      <p className="mt-0.5 text-xs text-dim">{label}</p>
     </div>
   )
 }

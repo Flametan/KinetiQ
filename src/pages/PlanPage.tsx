@@ -73,10 +73,10 @@ export default function PlanPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-10">
-      <header className="flex items-center justify-between gap-3 pt-2">
+      <header className="flex items-center justify-between gap-3 border-b-[3px] border-ink pb-4 pt-2">
         <div>
-          <p className="text-xs font-medium text-brand-400">{plan.splitLabel}</p>
-          <h1 className="mt-0.5 text-xl font-bold text-white">{plan.variantName}</h1>
+          <p className="text-xs font-bold uppercase tracking-[.1em] text-brand-400">{plan.splitLabel}</p>
+          <h1 className="font-display mt-1 text-[26px] uppercase leading-[0.95] text-ink">{plan.variantName}</h1>
         </div>
         <Barbell plates={plan.daysPerWeek} size="md" />
       </header>
@@ -88,13 +88,13 @@ export default function PlanPage() {
             const isToday = i === todayIndex
             return (
               <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-                <span className={`text-[10px] ${isToday ? 'font-semibold text-brand-400' : 'text-slate-500'}`}>
+                <span className={`text-[10px] font-semibold ${isToday ? 'text-brand-400' : 'text-dim'}`}>
                   {DAY_CYCLE_LABELS[i]}
                 </span>
                 <div
-                  className={`flex h-10 w-full items-center justify-center rounded-lg text-[10px] font-medium ${
-                    day ? 'bg-brand-500/70 text-white' : 'bg-white/5 text-slate-600'
-                  } ${isToday ? 'ring-2 ring-brand-300' : ''}`}
+                  className={`flex h-10 w-full items-center justify-center text-[10px] font-medium ${
+                    day ? 'bg-brand-500 text-white' : 'bg-panel2 text-dim'
+                  } ${isToday ? 'ring-2 ring-ink ring-offset-1 ring-offset-paper' : ''}`}
                 >
                   {day ? '' : '–'}
                 </div>
@@ -108,14 +108,14 @@ export default function PlanPage() {
         {plan.days.map((day) => {
           const isOpen = openDayId === day.id
           return (
-            <div key={day.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+            <div key={day.id} className="overflow-hidden border border-line bg-white">
               <button
                 onClick={() => setOpenDayId(isOpen ? null : day.id)}
                 className="flex w-full items-center justify-between px-4 py-3.5"
               >
                 <div className="text-left">
-                  <p className="font-semibold text-white">{day.name}</p>
-                  <p className="text-xs text-slate-500">{day.slots.length} Übungen</p>
+                  <p className="font-display text-base text-ink">{day.name}</p>
+                  <p className="text-xs text-dim">{day.slots.length} Übungen</p>
                 </div>
                 <svg
                   width="18"
@@ -126,13 +126,13 @@ export default function PlanPage() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  className={`text-dim transition-transform ${isOpen ? 'rotate-180' : ''}`}
                 >
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </button>
               {isOpen && (
-                <div className="flex flex-col border-t border-white/10 px-4 py-3">
+                <div className="flex flex-col border-t border-line px-4 py-3">
                   {day.slots.map((slot, i) => {
                     const next = day.slots[i + 1]
                     const connected = !!next && !!slot.supersetGroup && slot.supersetGroup === next.supersetGroup
@@ -140,21 +140,21 @@ export default function PlanPage() {
                       <div key={slot.slotId} className="flex flex-col gap-2">
                         <button
                           onClick={() => setEditingSlot({ dayId: day.id, slot })}
-                          className={`flex items-center justify-between gap-3 rounded-xl border bg-slate-950/60 px-3.5 py-3 text-left hover:border-white/20 ${
-                            slot.supersetGroup ? 'border-purple-500/30' : 'border-white/10'
+                          className={`flex items-center justify-between gap-3 border bg-panel2 px-3.5 py-3 text-left hover:border-ink ${
+                            slot.supersetGroup ? 'border-brand-300' : 'border-line'
                           }`}
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-xs text-slate-500">{slot.label}</p>
-                            <p className="truncate text-sm font-medium text-white">
+                            <p className="truncate text-xs text-dim">{slot.label}</p>
+                            <p className="truncate text-sm font-semibold text-ink">
                               {slot.exerciseName ?? 'Übung wählen'}
                             </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-2">
-                            <span className="rounded-md bg-white/5 px-2 py-1 text-xs font-medium text-slate-300">
+                            <span className="border border-line bg-white px-2 py-1 text-xs font-semibold text-dim">
                               {slot.sets} × {slot.repsMin}-{slot.repsMax}
                             </span>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-slate-500">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-dim">
                               <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
                             </svg>
                           </div>
@@ -162,10 +162,8 @@ export default function PlanPage() {
                         {next && (
                           <button
                             onClick={() => toggleSuperset(day.id, i)}
-                            className={`mx-auto flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium ${
-                              connected
-                                ? 'bg-purple-500/15 text-purple-300'
-                                : 'text-slate-600 hover:text-slate-400'
+                            className={`mx-auto flex items-center gap-1 px-3 py-1 text-[11px] font-semibold ${
+                              connected ? 'text-brand-400' : 'text-dim hover:text-ink'
                             }`}
                           >
                             {connected ? '⛓ Verbunden – trennen' : '+ Als Superset verbinden'}
@@ -183,7 +181,7 @@ export default function PlanPage() {
 
       <button
         onClick={handleNewPlan}
-        className="rounded-xl border border-white/10 py-3 text-sm font-medium text-slate-400 hover:border-white/20 hover:text-white"
+        className="border border-line py-3 text-sm font-semibold text-dim hover:border-ink hover:text-ink"
       >
         Neuen Plan erstellen
       </button>

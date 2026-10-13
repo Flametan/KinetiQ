@@ -20,9 +20,9 @@ export default function TrainingPage() {
   return (
     <div className="flex flex-col gap-6 pb-10">
       <header className="pt-2">
-        <p className="text-xs font-medium text-brand-400">Training starten</p>
-        <h1 className="mt-0.5 text-xl font-bold text-white">Was steht heute an?</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="text-xs font-bold uppercase tracking-[.1em] text-brand-400">Training starten</p>
+        <h1 className="font-display mt-1 text-[26px] uppercase leading-[0.95] text-ink">Was steht heute an?</h1>
+        <p className="mt-2 text-sm text-dim">
           Heute ist {dayLabel(todayIndex)} deines Zyklus —{' '}
           {suggestedDayId
             ? `geplant: ${plan.days.find((d) => d.id === suggestedDayId)?.name}`
@@ -38,21 +38,19 @@ export default function TrainingPage() {
             <button
               key={day.id}
               onClick={() => navigate(`/training/${day.id}`)}
-              className={`flex items-center justify-between rounded-2xl border p-4 text-left transition-colors ${
-                isSuggested
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-white/10 bg-white/5 hover:border-white/20'
+              className={`flex items-center justify-between border p-4 text-left transition-colors ${
+                isSuggested ? 'border-ink bg-white' : 'border-line bg-white hover:border-ink'
               }`}
             >
               <div>
-                <p className="font-semibold text-white">{day.name}</p>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p className="font-display text-base text-ink">{day.name}</p>
+                <p className="mt-0.5 text-xs text-dim">
                   {day.slots.length} Übungen{lastDate ? ` · zuletzt ${formatDate(lastDate)}` : ''}
                 </p>
               </div>
               {isSuggested && (
-                <span className="rounded-full bg-brand-500 px-2.5 py-1 text-[10px] font-semibold text-white">
-                  HEUTE
+                <span className="bg-brand-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                  Heute
                 </span>
               )}
             </button>

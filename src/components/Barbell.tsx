@@ -18,20 +18,20 @@ const SIZES = {
  */
 export default function Barbell({ plates, size = 'md', active = true }: BarbellProps) {
   const { plateH, plateW, gap, barOverhang, barThickness } = SIZES[size]
-  const plateColor = active ? 'bg-brand-500' : 'bg-slate-600'
-  const barColor = active ? 'bg-slate-500' : 'bg-slate-700'
+  const plateColor = active ? 'bg-ink' : 'bg-line'
+  const barColor = active ? 'bg-dim' : 'bg-line'
 
   return (
     <div className="relative inline-flex items-center justify-center" style={{ height: plateH }}>
       <div
-        className={`absolute top-1/2 -translate-y-1/2 rounded-full ${barColor}`}
+        className={`absolute top-1/2 -translate-y-1/2 ${barColor}`}
         style={{ left: -barOverhang, right: -barOverhang, height: barThickness }}
       />
       <div className="relative flex items-center" style={{ gap }}>
         {Array.from({ length: plates }).map((_, i) => (
           <div
             key={`l-${i}`}
-            className={`rounded-[3px] ${plateColor}`}
+            className={`rounded-[1px] ${plateColor}`}
             style={{ width: plateW, height: plateH }}
           />
         ))}
@@ -39,7 +39,7 @@ export default function Barbell({ plates, size = 'md', active = true }: BarbellP
         {Array.from({ length: plates }).map((_, i) => (
           <div
             key={`r-${i}`}
-            className={`rounded-[3px] ${plateColor}`}
+            className={`rounded-[1px] ${plateColor}`}
             style={{ width: plateW, height: plateH }}
           />
         ))}

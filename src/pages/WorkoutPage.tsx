@@ -16,10 +16,10 @@ const RPE_OPTIONS = [5, 6, 7, 8, 9, 10]
 const SET_TYPE_ORDER: SetType[] = ['normal', 'warmup', 'failure', 'dropset']
 const SET_TYPE_LABEL: Record<SetType, string> = { normal: '', warmup: 'W', failure: 'F', dropset: 'D' }
 const SET_TYPE_COLOR: Record<SetType, string> = {
-  normal: 'text-slate-400',
-  warmup: 'text-amber-400',
-  failure: 'text-red-400',
-  dropset: 'text-purple-400',
+  normal: 'text-dim',
+  warmup: 'text-amber-600',
+  failure: 'text-red-700',
+  dropset: 'text-violet-600',
 }
 
 function formatDuration(totalSeconds: number) {
@@ -311,19 +311,16 @@ export default function WorkoutPage() {
 
     return (
       <div>
-        <div className="mb-1.5 flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500/15 text-brand-300">
-              <DumbbellMini />
-            </div>
-            <button onClick={() => setPickerSlotId(ex.slotId)} className="min-w-0 text-left">
-              <p className="truncate text-base font-semibold text-brand-300">{ex.exerciseName || 'Übung wählen'}</p>
-            </button>
-          </div>
+        <div className="mb-1 flex items-start justify-between gap-3">
+          <button onClick={() => setPickerSlotId(ex.slotId)} className="min-w-0 text-left">
+            <p className="font-display truncate text-[17px] leading-tight text-ink">
+              {ex.exerciseName || 'Übung wählen'}
+            </p>
+          </button>
           <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setMenuSlotId(menuSlotId === ex.slotId ? null : ex.slotId)}
-              className="rounded-full p-1.5 text-slate-500 hover:bg-white/5 hover:text-white"
+              className="rounded-full p-1.5 text-dim hover:bg-panel2 hover:text-ink"
               aria-label="Optionen"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -333,13 +330,13 @@ export default function WorkoutPage() {
               </svg>
             </button>
             {menuSlotId === ex.slotId && (
-              <div className="absolute right-0 z-10 mt-1 w-56 overflow-hidden rounded-xl border border-white/10 bg-slate-900 shadow-xl">
+              <div className="absolute right-0 z-10 mt-1 w-56 overflow-hidden border border-ink bg-white shadow-xl">
                 <button
                   onClick={() => {
                     setPickerSlotId(ex.slotId)
                     setMenuSlotId(null)
                   }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5"
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
                 >
                   Übung ersetzen
                 </button>
@@ -348,7 +345,7 @@ export default function WorkoutPage() {
                     toggleInSet(notesOpen, setNotesOpen, ex.slotId)
                     setMenuSlotId(null)
                   }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5"
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
                 >
                   {notesOpen.has(ex.slotId) ? 'Notiz ausblenden' : 'Notiz hinzufügen'}
                 </button>
@@ -357,7 +354,7 @@ export default function WorkoutPage() {
                     toggleInSet(rpeOpen, setRpeOpen, ex.slotId)
                     setMenuSlotId(null)
                   }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5"
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
                 >
                   {rpeOpen.has(ex.slotId) ? 'RPE ausblenden' : 'RPE anzeigen'}
                 </button>
@@ -366,7 +363,7 @@ export default function WorkoutPage() {
                     addWarmupSets(ex)
                     setMenuSlotId(null)
                   }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5"
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
                 >
                   Aufwärmsätze vorschlagen
                 </button>
@@ -375,7 +372,7 @@ export default function WorkoutPage() {
                     setPlateModal({ weight: ex.sets.find((s) => s.weight > 0)?.weight ?? 20 })
                     setMenuSlotId(null)
                   }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5"
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
                 >
                   Plattenrechner
                 </button>
@@ -384,7 +381,7 @@ export default function WorkoutPage() {
           </div>
         </div>
 
-        <p className="mb-2 truncate text-xs text-slate-500">
+        <p className="mb-2 truncate text-xs text-dim">
           {ex.label} · Ziel {ex.targetSets} × {ex.repsMin}-{ex.repsMax}
         </p>
 
@@ -393,13 +390,13 @@ export default function WorkoutPage() {
             value={ex.notes ?? ''}
             onChange={(e) => updateNotes(ex.slotId, e.target.value)}
             placeholder="Notizen hier hinzufügen…"
-            className="mb-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 placeholder:text-slate-600 focus:border-brand-400 focus:outline-none"
+            className="mb-2 w-full border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
           />
         )}
 
         {ex.exerciseId ? (
           <>
-            <div className="grid grid-cols-[1.75rem_4.25rem_1fr_1fr_2.25rem] gap-2 px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-500">
+            <div className="grid grid-cols-[1.75rem_4.25rem_1fr_1fr_2.25rem] gap-2 px-1 pb-1.5 text-[10px] font-bold uppercase tracking-[.06em] text-dim">
               <span>Satz</span>
               <span>Vorherige</span>
               <span>kg</span>
@@ -412,17 +409,20 @@ export default function WorkoutPage() {
                 const type = set.type ?? 'normal'
                 const isPR = set.completed && type !== 'warmup' && priorBest > 0 && set.weight > priorBest
                 return (
-                  <div key={i} className="flex flex-col gap-1">
+                  <div key={i} className="flex flex-col gap-1 border-t border-line pt-1.5 first:border-t-0 first:pt-0">
                     <div className="grid grid-cols-[1.75rem_4.25rem_1fr_1fr_2.25rem] items-center gap-2">
                       <button
                         onClick={() => cycleSetType(ex.slotId, i)}
-                        className={`text-sm font-semibold ${SET_TYPE_COLOR[type]}`}
+                        className={`font-display text-sm ${SET_TYPE_COLOR[type]}`}
                         title="Satztyp ändern (Normal/Warm-up/Failure/Dropset)"
                       >
                         {type === 'normal' ? set.setNumber : SET_TYPE_LABEL[type]}
                       </button>
-                      <span className="truncate text-xs text-slate-500">
-                        {prev ? `${prev.weight}kg × ${prev.reps}` : '—'} {isPR ? '🏆' : ''}
+                      <span className="flex items-center gap-1 truncate text-xs text-dim">
+                        {prev ? `${prev.weight}kg × ${prev.reps}` : '—'}
+                        {isPR && (
+                          <span className="shrink-0 bg-brand-500 px-1.5 py-0.5 text-[9px] font-bold text-white">PR</span>
+                        )}
                       </span>
                       <input
                         type="number"
@@ -430,14 +430,14 @@ export default function WorkoutPage() {
                         step="0.5"
                         value={set.weight}
                         onChange={(e) => updateSet(ex.slotId, i, { weight: Number(e.target.value) })}
-                        className="w-full rounded-lg border border-white/10 bg-slate-950 px-2 py-2 text-center text-sm text-white focus:border-brand-400 focus:outline-none"
+                        className="w-full border border-line bg-white px-2 py-2 text-center text-sm font-bold text-ink focus:border-ink focus:outline-none"
                       />
                       <input
                         type="number"
                         inputMode="numeric"
                         value={set.reps}
                         onChange={(e) => updateSet(ex.slotId, i, { reps: Number(e.target.value) })}
-                        className="w-full rounded-lg border border-white/10 bg-slate-950 px-2 py-2 text-center text-sm text-white focus:border-brand-400 focus:outline-none"
+                        className="w-full border border-line bg-white px-2 py-2 text-center text-sm font-bold text-ink focus:border-ink focus:outline-none"
                       />
                       <button
                         onClick={() => {
@@ -446,27 +446,25 @@ export default function WorkoutPage() {
                           const groupKey = ex.supersetGroup ?? ex.slotId
                           toggleSetCompleted(ex, i, isLast, groupKey)
                         }}
-                        className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
-                          set.completed
-                            ? 'border-brand-500 bg-brand-500 text-white'
-                            : 'border-white/15 text-slate-500 hover:border-white/30'
+                        className={`flex h-9 w-9 items-center justify-center border-2 transition-colors ${
+                          set.completed ? 'border-ink bg-ink text-white' : 'border-ink text-ink hover:bg-panel2'
                         }`}
                         aria-label="Satz erledigt"
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
                           <path d="M20 6 9 17l-5-5" />
                         </svg>
                       </button>
                     </div>
                     {rpeOpen.has(ex.slotId) && (
                       <div className="flex items-center gap-1 pl-9">
-                        <span className="mr-1 text-[10px] text-slate-600">RPE</span>
+                        <span className="mr-1 text-[10px] font-semibold text-dim">RPE</span>
                         {RPE_OPTIONS.map((v) => (
                           <button
                             key={v}
                             onClick={() => updateSet(ex.slotId, i, { rpe: set.rpe === v ? undefined : v })}
-                            className={`h-6 w-6 rounded-md text-[11px] font-medium transition-colors ${
-                              set.rpe === v ? 'bg-brand-500 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                            className={`h-6 w-6 text-[11px] font-bold transition-colors ${
+                              set.rpe === v ? 'bg-ink text-white' : 'bg-panel2 text-dim hover:bg-line'
                             }`}
                           >
                             {v}
@@ -481,14 +479,14 @@ export default function WorkoutPage() {
             <div className="mt-2 flex gap-2">
               <button
                 onClick={() => addSet(ex.slotId)}
-                className="flex-1 rounded-lg border border-dashed border-white/15 py-1.5 text-xs font-medium text-slate-400 hover:border-white/30 hover:text-white"
+                className="flex-1 border border-dashed border-line py-1.5 text-xs font-semibold text-dim hover:border-ink hover:text-ink"
               >
                 + Satz hinzufügen
               </button>
               {ex.sets.length > 1 && (
                 <button
                   onClick={() => removeSet(ex.slotId, ex.sets.length - 1)}
-                  className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-white"
+                  className="border border-line px-3 py-1.5 text-xs font-semibold text-dim hover:text-ink"
                 >
                   Satz entfernen
                 </button>
@@ -498,7 +496,7 @@ export default function WorkoutPage() {
         ) : (
           <button
             onClick={() => setPickerSlotId(ex.slotId)}
-            className="w-full rounded-xl border border-dashed border-white/20 py-3 text-sm text-slate-400 hover:border-brand-400 hover:text-brand-300"
+            className="w-full border border-dashed border-line py-3 text-sm font-semibold text-dim hover:border-ink hover:text-ink"
           >
             Übung auswählen, um Sätze zu erfassen
           </button>
@@ -509,29 +507,29 @@ export default function WorkoutPage() {
 
   return (
     <div className="-mx-4 -mt-6 flex flex-col pb-10" onClick={() => setMenuSlotId(null)}>
-      <div className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/95 px-4 pb-3 pt-4 backdrop-blur">
+      <div className="sticky top-0 z-20 border-b-[3px] border-ink bg-paper/95 px-4 pb-3 pt-4 backdrop-blur">
         <div className="flex items-center justify-between">
-          <button onClick={() => navigate('/training')} className="flex items-center gap-1 text-white">
+          <button onClick={() => navigate('/training')} className="flex items-center gap-1 text-ink">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m6 9 6 6 6-6" />
             </svg>
-            <span className="font-semibold">{day.name}</span>
+            <span className="font-display text-[17px] uppercase">{day.name}</span>
           </button>
           <button
             onClick={finish}
             disabled={!hasAnyLoggedSet || saved}
-            className="rounded-xl bg-brand-500 px-5 py-2 text-sm font-semibold text-white disabled:opacity-40"
+            className="bg-ink px-5 py-2 text-sm font-bold uppercase tracking-wide text-white disabled:opacity-40"
           >
             {saved ? 'Gespeichert ✓' : 'Beenden'}
           </button>
         </div>
         <div className="mt-4 flex items-center justify-between">
-          <Stat label="Dauer" value={formatDuration(elapsed)} accent />
-          <Stat label="Volumen" value={`${totalVolume.toLocaleString('de-DE')} kg`} />
+          <Stat label="Dauer" value={formatDuration(elapsed)} />
+          <Stat label="Volumen" value={`${totalVolume.toLocaleString('de-DE')} kg`} accent />
           <Stat label="Sätze" value={String(totalSets)} />
           <button
             onClick={cancelWorkout}
-            className="rounded-full p-2 text-slate-500 hover:bg-white/5 hover:text-white"
+            className="rounded-full p-2 text-dim hover:bg-panel2 hover:text-ink"
             aria-label="Training abbrechen"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -551,41 +549,39 @@ export default function WorkoutPage() {
           const allHaveExercise = block.every((e) => e.exerciseId)
 
           return (
-            <div key={groupKey + blockIdx} className={blockIdx > 0 ? 'mt-6 border-t border-white/10 pt-6' : 'mt-5'}>
+            <div key={groupKey + blockIdx} className={blockIdx > 0 ? 'mt-6 border-t border-line pt-6' : 'mt-5'}>
               {isGrouped && (
-                <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-purple-300">
-                  <SupersetIcon />
-                  Superset
+                <div className="mb-2.5 flex items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-[.12em] text-brand-400">Superset</span>
+                  <span className="h-px flex-1 bg-line" />
                 </div>
               )}
-              <div
-                className={isGrouped ? 'flex flex-col gap-5 rounded-2xl border border-purple-500/20 bg-purple-500/5 p-3' : ''}
-              >
+              <div className={isGrouped ? 'flex flex-col gap-5 bg-panel2 p-3.5' : ''}>
                 {block.map((ex) => (
                   <div key={ex.slotId}>{renderExerciseBody(ex)}</div>
                 ))}
               </div>
               {allHaveExercise && (
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-3 flex items-center gap-2">
                   <ClockMini />
-                  <span className="text-sm font-medium text-brand-400">Pausentimer: {formatRest(restRemaining)}</span>
+                  <span className="font-display text-sm text-brand-400">Pause {formatRest(restRemaining)}</span>
                   <button
                     onClick={() => adjustRest(groupKey, lastEx.slotId, -15)}
-                    className="rounded-md border border-white/10 px-2 py-0.5 text-xs text-slate-400 hover:text-white"
+                    className="border border-ink px-2 py-0.5 text-xs font-semibold text-ink hover:bg-panel2"
                   >
                     −15s
                   </button>
                   <button
                     onClick={() => adjustRest(groupKey, lastEx.slotId, 15)}
-                    className="rounded-md border border-white/10 px-2 py-0.5 text-xs text-slate-400 hover:text-white"
+                    className="border border-ink px-2 py-0.5 text-xs font-semibold text-ink hover:bg-panel2"
                   >
                     +15s
                   </button>
                   <button
                     onClick={() => setRestTimers((r) => ({ ...r, [groupKey]: restDefault }))}
-                    className="rounded-md border border-white/10 px-2 py-0.5 text-xs text-slate-400 hover:text-white"
+                    className="border border-ink px-2 py-0.5 text-xs font-semibold text-ink hover:bg-panel2"
                   >
-                    Neu starten
+                    Reset
                   </button>
                 </div>
               )}
@@ -610,21 +606,21 @@ export default function WorkoutPage() {
       )}
 
       {finishSummary && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-sm rounded-3xl border border-brand-500/30 bg-slate-900 p-6 text-center">
-            <p className="text-3xl">🎉</p>
-            <h2 className="mt-2 text-lg font-bold text-white">Neue Rekorde!</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-6">
+          <div className="w-full max-w-sm border-t-[3px] border-ink bg-white p-6 text-center">
+            <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-400">Neue Bestwerte</p>
+            <h2 className="font-display mt-2 text-2xl uppercase text-ink">Glückwunsch</h2>
             <div className="mt-4 flex flex-col gap-2 text-left">
               {finishSummary.prs.map((pr, i) => (
-                <div key={i} className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2">
-                  <span className="text-sm text-slate-200">{pr.name}</span>
-                  <span className="text-sm font-semibold text-brand-300">{pr.weight} kg 🏆</span>
+                <div key={i} className="flex items-center justify-between bg-panel2 px-3 py-2.5">
+                  <span className="text-sm font-medium text-ink">{pr.name}</span>
+                  <span className="bg-brand-500 px-2 py-0.5 text-sm font-bold text-white">{pr.weight} kg</span>
                 </div>
               ))}
             </div>
             <button
               onClick={() => navigate('/progress')}
-              className="mt-5 w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white"
+              className="mt-5 w-full bg-ink py-3 text-sm font-bold uppercase tracking-wide text-white"
             >
               Weiter
             </button>
@@ -638,19 +634,9 @@ export default function WorkoutPage() {
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[11px] uppercase tracking-wide text-slate-500">{label}</span>
-      <span className={`text-base font-bold ${accent ? 'text-brand-400' : 'text-white'}`}>{value}</span>
+      <span className="text-[10px] font-bold uppercase tracking-[.08em] text-dim">{label}</span>
+      <span className={`font-display text-lg ${accent ? 'text-brand-400' : 'text-ink'}`}>{value}</span>
     </div>
-  )
-}
-
-function DumbbellMini() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6.5 6.5 3 10l4 4 3.5-3.5" />
-      <path d="M17.5 17.5 21 14l-4-4-3.5 3.5" />
-      <path d="m9 15 6-6" />
-    </svg>
   )
 }
 
@@ -659,14 +645,6 @@ function ClockMini() {
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-400">
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3 3" />
-    </svg>
-  )
-}
-
-function SupersetIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m18 6-4 4M6 18l4-4M8 6l10 10" />
     </svg>
   )
 }

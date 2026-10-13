@@ -12,12 +12,12 @@ const ProgressPage = lazy(() => import('./pages/ProgressPage'))
 
 function Splash() {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-slate-950">
-      <div className="text-2xl font-bold tracking-tight text-white">
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-paper">
+      <div className="font-display text-2xl tracking-tight text-ink">
         Kineti<span className="text-brand-400">Q</span>
       </div>
-      <div className="h-1 w-24 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full w-1/2 animate-pulse rounded-full bg-brand-500" />
+      <div className="h-1 w-24 overflow-hidden bg-line">
+        <div className="h-full w-1/2 animate-pulse bg-brand-500" />
       </div>
     </div>
   )
@@ -50,7 +50,7 @@ export default function App() {
           <Route
             path="/progress"
             element={
-              <Suspense fallback={<div className="pt-10 text-center text-sm text-slate-500">Lädt…</div>}>
+              <Suspense fallback={<div className="pt-10 text-center text-sm text-dim">Lädt…</div>}>
                 <ProgressPage />
               </Suspense>
             }
