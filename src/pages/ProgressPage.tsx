@@ -11,8 +11,10 @@ import {
 } from '../lib/history'
 import { generateId } from '../utils/id'
 import CalendarHeatmap from '../components/CalendarHeatmap'
+import Snackbar from '../components/Snackbar'
+import { useUndoableDelete } from '../hooks/useUndoableDelete'
 import { displayToKg, kgToDisplay, unitLabel } from '../lib/units'
-import type { WeightUnit, WorkoutSession } from '../types'
+import type { BodyWeightEntry, WeightUnit, WorkoutSession } from '../types'
 
 type View = 'exercise' | 'history' | 'calendar' | 'balance' | 'bodyweight'
 
@@ -284,8 +286,10 @@ function BodyWeightView({ unit }: { unit: WeightUnit }) {
   const addBodyWeight = useAppStore((s) => s.addBodyWeight)
   const removeBodyWeight = useAppStore((s) => s.removeBodyWeight)
   const [weight, setWeight] = useState('')
+  const weightDelete = useUndoableDelete<BodyWeightEntry>((b) => removeBodyWeight(b.id))
+  const visibleBodyWeights = bodyWeights.filter((b) => !weightDelete.isPending(b.id))
 
-  const chartData = bodyWeights.map((b) => ({
+  const chartData = visibleBodyWeights.map((b) => ({
     ...b,
     weight: kgToDisplay(b.weight, unit),
     label: new Date(b.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
@@ -355,11 +359,11 @@ function BodyWeightView({ unit }: { unit: WeightUnit }) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            {[...bodyWeights].reverse().map((b) => (
+            {[...visibleBodyWeights].reverse().map((b) => (
               <div key={b.id} className="flex items-center justify-between border border-line bg-surface py-1 pl-3.5 pr-1.5">
                 <span className="text-sm font-semibold text-ink">{kgToDisplay(b.weight, unit)} {unitLabel(unit)}</span>
                 <span className="text-xs text-dim">{formatFullDate(b.date)}</span>
-                <button onClick={() => removeBodyWeight(b.id)} className="icon-btn press text-dim hover:bg-panel2 hover:text-brand-400" aria-label="Löschen">
+                <button onClick={() => weightDelete.triggerDelete(b)} className="icon-btn press text-dim hover:bg-panel2 hover:text-brand-400" aria-label="Löschen">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
                   </svg>
@@ -368,6 +372,14 @@ function BodyWeightView({ unit }: { unit: WeightUnit }) {
             ))}
           </div>
         </>
+      )}
+
+      {weightDelete.pending && (
+        <Snackbar
+          message={`Eintrag gelöscht`}
+          actionLabel="Rückgängig"
+          onAction={weightDelete.undo}
+        />
       )}
     </section>
   )

@@ -4,6 +4,7 @@ import { movementPatternById, movementPatterns } from '../data/movementPatterns'
 import { useAppStore } from '../store/useAppStore'
 import { generateId } from '../utils/id'
 import { EQUIPMENT_OPTIONS, inferEquipment, type Equipment } from '../lib/equipment'
+import { exerciseImageByName } from '../data/exerciseImages'
 import type { CustomExercise, ExerciseOption } from '../types'
 
 interface Props {
@@ -129,24 +130,36 @@ export default function ExercisePicker({
                 </h3>
               )}
               <div className="flex flex-col gap-1.5">
-                {exercises.map((ex) => (
-                  <button
-                    key={ex.id}
-                    onClick={() => handleSelect(ex)}
-                    className={`press flex items-center justify-between border px-4 py-3 text-left text-sm font-medium transition-colors ${
-                      ex.id === currentExerciseId
-                        ? 'border-ink bg-ink text-on-ink'
-                        : 'border-line bg-surface text-ink hover:border-ink'
-                    }`}
-                  >
-                    <span>{ex.name}</span>
-                    {ex.id === currentExerciseId && (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 6 9 17l-5-5" />
-                      </svg>
-                    )}
-                  </button>
-                ))}
+                {exercises.map((ex) => {
+                  const image = exerciseImageByName[ex.name]
+                  const selected = ex.id === currentExerciseId
+                  return (
+                    <button
+                      key={ex.id}
+                      onClick={() => handleSelect(ex)}
+                      className={`press flex items-center justify-between gap-3 border px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                        selected ? 'border-ink bg-ink text-on-ink' : 'border-line bg-surface text-ink hover:border-ink'
+                      }`}
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        {image && (
+                          <img
+                            src={image}
+                            alt=""
+                            loading="lazy"
+                            className={`h-11 w-11 shrink-0 object-cover ${selected ? 'opacity-90' : ''}`}
+                          />
+                        )}
+                        <span className="truncate">{ex.name}</span>
+                      </span>
+                      {selected && (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           ))}

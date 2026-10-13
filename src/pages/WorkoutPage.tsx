@@ -8,8 +8,10 @@ import { playRestEndSound } from '../lib/sound'
 import { generateId } from '../utils/id'
 import { DEFAULT_BAR_WEIGHT, displayToKg, kgToDisplay, kgToUnit, unitLabel } from '../lib/units'
 import { isDeloadWeek } from '../lib/schedule'
+import { exerciseImageByName } from '../data/exerciseImages'
 import ExercisePicker from '../components/ExercisePicker'
 import PlateCalculatorModal from '../components/PlateCalculatorModal'
+import ConfirmDialog from '../components/ConfirmDialog'
 import type { ExerciseLogEntry, SetEntry, SetType } from '../types'
 
 const DEFAULT_REST_SECONDS = 120
@@ -111,6 +113,7 @@ export default function WorkoutPage() {
   const [saved, setSaved] = useState(false)
   const [finishSummary, setFinishSummary] = useState<{ prs: { name: string; weight: number }[] } | null>(null)
   const [saving, setSaving] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
   const [sessionNoteOpen, setSessionNoteOpen] = useState(false)
   const [sessionNote, setSessionNote] = useState('')
   const [exerciseNoteSlotId, setExerciseNoteSlotId] = useState<string | null>(null)
@@ -305,9 +308,7 @@ export default function WorkoutPage() {
   }
 
   function cancelWorkout() {
-    if (confirm('Training abbrechen? Nicht gespeicherte Eingaben gehen verloren.')) {
-      navigate('/training')
-    }
+    setConfirmCancel(true)
   }
 
   const hasAnyLoggedSet = exercises.some((e) => e.sets.some((s) => s.completed))
@@ -327,7 +328,15 @@ export default function WorkoutPage() {
     return (
       <div>
         <div className="mb-1 flex items-start justify-between gap-3">
-          <button onClick={() => setPickerSlotId(ex.slotId)} className="min-w-0 text-left">
+          <button onClick={() => setPickerSlotId(ex.slotId)} className="flex min-w-0 items-center gap-2.5 text-left">
+            {ex.exerciseName && exerciseImageByName[ex.exerciseName] && (
+              <img
+                src={exerciseImageByName[ex.exerciseName]}
+                alt=""
+                loading="lazy"
+                className="h-11 w-11 shrink-0 border border-line object-cover"
+              />
+            )}
             <p className="font-display truncate text-[17px] leading-tight text-ink">
               {ex.exerciseName || 'Übung wählen'}
             </p>
@@ -701,6 +710,20 @@ export default function WorkoutPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmCancel}
+        title="Training abbrechen?"
+        message="Nicht gespeicherte Eingaben gehen verloren."
+        cancelLabel="Weiter trainieren"
+        confirmLabel="Ja, abbrechen"
+        danger
+        onCancel={() => setConfirmCancel(false)}
+        onConfirm={() => {
+          setConfirmCancel(false)
+          navigate('/training')
+        }}
+      />
     </div>
   )
 }

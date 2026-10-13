@@ -3,9 +3,18 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import DayEditSheet from '../components/DayEditSheet'
 import Barbell from '../components/Barbell'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { DAY_CYCLE_LABELS, getDayIndexInCycle, getMesocycleWeek, isDeloadWeek, isToday } from '../lib/schedule'
 import { generateId } from '../utils/id'
 import type { UserPlanSlot } from '../types'
+
+interface PendingConfirm {
+  title: string
+  message: string
+  confirmLabel: string
+  danger?: boolean
+  onConfirm: () => void
+}
 
 export default function PlanPage() {
   const plan = useAppStore((s) => s.activePlan)
@@ -19,6 +28,7 @@ export default function PlanPage() {
   const [editingDayId, setEditingDayId] = useState<string | null>(null)
   const [editingSlot, setEditingSlot] = useState<{ dayId: string; slot: UserPlanSlot } | null>(null)
   const [showOtherPlans, setShowOtherPlans] = useState(false)
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null)
 
   if (!plan) return <Navigate to="/onboarding" replace />
 
@@ -82,15 +92,22 @@ export default function PlanPage() {
   }
 
   function handleNewPlan() {
-    if (confirm('Neuen Plan erstellen? Der aktuelle Plan wird archiviert (nicht gelöscht) und kann jederzeit wieder aktiviert werden. Der Trainingsverlauf bleibt in jedem Fall erhalten.')) {
-      navigate('/onboarding')
-    }
+    setPendingConfirm({
+      title: 'Neuen Plan erstellen?',
+      message: 'Der aktuelle Plan wird archiviert (nicht gelöscht) und kann jederzeit wieder aktiviert werden. Der Trainingsverlauf bleibt in jedem Fall erhalten.',
+      confirmLabel: 'Erstellen',
+      onConfirm: () => navigate('/onboarding'),
+    })
   }
 
-  async function handleDeletePlan(id: string, name: string) {
-    if (confirm(`"${name}" endgültig löschen? Der dazugehörige Trainingsverlauf bleibt erhalten, der Plan selbst nicht.`)) {
-      await removePlan(id)
-    }
+  function handleDeletePlan(id: string, name: string) {
+    setPendingConfirm({
+      title: `"${name}" löschen?`,
+      message: 'Der dazugehörige Trainingsverlauf bleibt erhalten, der Plan selbst nicht – das lässt sich nicht rückgängig machen.',
+      confirmLabel: 'Löschen',
+      danger: true,
+      onConfirm: () => removePlan(id),
+    })
   }
 
   const todayIndex = getDayIndexInCycle(plan.createdAt)
@@ -268,6 +285,19 @@ export default function PlanPage() {
           onClosePicker={() => setEditingSlot(null)}
         />
       )}
+
+      <ConfirmDialog
+        open={!!pendingConfirm}
+        title={pendingConfirm?.title ?? ''}
+        message={pendingConfirm?.message ?? ''}
+        confirmLabel={pendingConfirm?.confirmLabel}
+        danger={pendingConfirm?.danger}
+        onCancel={() => setPendingConfirm(null)}
+        onConfirm={() => {
+          pendingConfirm?.onConfirm()
+          setPendingConfirm(null)
+        }}
+      />
     </div>
   )
 }

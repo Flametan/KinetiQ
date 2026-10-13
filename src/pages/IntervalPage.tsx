@@ -106,7 +106,7 @@ export default function IntervalPage() {
   if (running || done) {
     const current = segments[segmentIndex]
     return (
-      <div className="-mx-4 -mt-6 flex min-h-[calc(100dvh-5.5rem)] flex-col items-center justify-center gap-6 px-4 text-center">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-paper px-4 text-center">
         {done ? (
           <>
             <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-400">Fertig</p>

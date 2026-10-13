@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import { movementPatternById } from '../data/movementPatterns'
 import { db } from '../db/db'
-import type { DataExport, ThemePreference, WeightUnit } from '../types'
+import ConfirmDialog from '../components/ConfirmDialog'
+import Snackbar from '../components/Snackbar'
+import { useUndoableDelete } from '../hooks/useUndoableDelete'
+import type { CustomExercise, DataExport, ThemePreference, WeightUnit } from '../types'
 
 export default function SettingsPage() {
   const customExercises = useAppStore((s) => s.customExercises)
@@ -19,11 +22,11 @@ export default function SettingsPage() {
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState(false)
   const [notifyError, setNotifyError] = useState<string | null>(null)
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [pendingImport, setPendingImport] = useState<DataExport | null>(null)
+  const exerciseDelete = useUndoableDelete<CustomExercise>((ex) => removeCustomExercise(ex.id))
 
   async function resetAll() {
-    if (!confirm('Wirklich ALLE Daten löschen? Plan, eigene Übungen und dein kompletter Trainingsverlauf gehen unwiderruflich verloren.')) {
-      return
-    }
     await db.delete()
     await db.open()
     await init()
@@ -60,19 +63,18 @@ export default function SettingsPage() {
       if (!data || typeof data !== 'object' || !Array.isArray(data.sessions)) {
         throw new Error('Datei hat kein gültiges KinetiQ-Export-Format.')
       }
-      if (
-        !confirm(
-          'Import ersetzt ALLE aktuellen Daten auf diesem Gerät durch den Inhalt der Datei. Fortfahren?',
-        )
-      ) {
-        return
-      }
-      await importAll(data)
-      setImportSuccess(true)
-      navigate('/plan')
+      setPendingImport(data)
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'Import fehlgeschlagen.')
     }
+  }
+
+  async function confirmImport() {
+    if (!pendingImport) return
+    await importAll(pendingImport)
+    setPendingImport(null)
+    setImportSuccess(true)
+    navigate('/plan')
   }
 
   async function toggleReminders(enabled: boolean) {
@@ -90,6 +92,8 @@ export default function SettingsPage() {
     }
     await updateSettings({ remindersEnabled: enabled })
   }
+
+  const visibleCustomExercises = customExercises.filter((ex) => !exerciseDelete.isPending(ex.id))
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -177,15 +181,15 @@ export default function SettingsPage() {
 
       <section>
         <p className="mb-2 text-xs font-bold uppercase tracking-wide text-dim">
-          Eigene Übungen ({customExercises.length})
+          Eigene Übungen ({visibleCustomExercises.length})
         </p>
-        {customExercises.length === 0 ? (
+        {visibleCustomExercises.length === 0 ? (
           <p className="border border-line bg-surface p-4 text-sm text-dim">
             Du hast noch keine eigenen Übungen angelegt. Das geht direkt bei der Übungsauswahl im Plan.
           </p>
         ) : (
           <div className="flex flex-col gap-2">
-            {customExercises.map((ex) => (
+            {visibleCustomExercises.map((ex) => (
               <div
                 key={ex.id}
                 className="flex items-center justify-between border border-line bg-surface px-4 py-3"
@@ -195,7 +199,7 @@ export default function SettingsPage() {
                   <p className="text-xs text-dim">{movementPatternById.get(ex.movementPatternId)?.name}</p>
                 </div>
                 <button
-                  onClick={() => removeCustomExercise(ex.id)}
+                  onClick={() => exerciseDelete.triggerDelete(ex)}
                   className="icon-btn press text-dim hover:bg-panel2 hover:text-brand-400"
                   aria-label="Löschen"
                 >
@@ -240,7 +244,7 @@ export default function SettingsPage() {
           Löscht Plan, eigene Übungen und den gesamten Trainingsverlauf von diesem Gerät.
         </p>
         <button
-          onClick={resetAll}
+          onClick={() => setConfirmReset(true)}
           className="press mt-3 w-full border border-ink bg-ink py-2.5 text-sm font-bold text-on-ink hover:bg-brand-500 hover:text-white"
         >
           Alle Daten zurücksetzen
@@ -250,6 +254,37 @@ export default function SettingsPage() {
       <p className="text-center text-xs text-dim">
         KinetiQ · Daten werden lokal auf diesem Gerät gespeichert
       </p>
+
+      <ConfirmDialog
+        open={confirmReset}
+        title="Wirklich alle Daten löschen?"
+        message="Plan, eigene Übungen und dein kompletter Trainingsverlauf gehen unwiderruflich verloren."
+        confirmLabel="Löschen"
+        danger
+        onCancel={() => setConfirmReset(false)}
+        onConfirm={() => {
+          setConfirmReset(false)
+          resetAll()
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!pendingImport}
+        title="Daten importieren?"
+        message="Import ersetzt ALLE aktuellen Daten auf diesem Gerät durch den Inhalt der Datei."
+        confirmLabel="Importieren"
+        danger
+        onCancel={() => setPendingImport(null)}
+        onConfirm={confirmImport}
+      />
+
+      {exerciseDelete.pending && (
+        <Snackbar
+          message={`"${exerciseDelete.pending.name}" gelöscht`}
+          actionLabel="Rückgängig"
+          onAction={exerciseDelete.undo}
+        />
+      )}
     </div>
   )
 }
