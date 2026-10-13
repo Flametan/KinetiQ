@@ -1,13 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
-import { dayLabel, getDayIndexInCycle, getMesocycleWeek, isDeloadWeek } from '../lib/schedule'
-
-function isToday(iso: string): boolean {
-  const d = new Date(iso)
-  const now = new Date()
-  return d.toDateString() === now.toDateString()
-}
+import { dayLabel, getDayIndexInCycle, getMesocycleWeek, isDeloadWeek, isToday } from '../lib/schedule'
 
 export default function TrainingPage() {
   const plan = useAppStore((s) => s.activePlan)

@@ -1,8 +1,8 @@
 import { NavLink } from 'react-router-dom'
 
 const items = [
-  { to: '/training', label: 'Training', icon: DumbbellIcon },
   { to: '/plan', label: 'Plan', icon: ClipboardIcon },
+  { to: '/training', label: 'Training', icon: DumbbellIcon },
   { to: '/progress', label: 'Fortschritt', icon: ChartIcon },
   { to: '/settings', label: 'Mehr', icon: GearIcon },
 ]

@@ -35,3 +35,8 @@ export function isDeloadWeek(createdAt: number, intervalWeeks: number, now: numb
   if (intervalWeeks <= 0) return false
   return getMesocycleWeek(createdAt, now) % intervalWeeks === 0
 }
+
+/** Ob ein ISO-Zeitstempel auf den heutigen Kalendertag fällt. */
+export function isToday(iso: string, now: number = Date.now()): boolean {
+  return new Date(iso).toDateString() === new Date(now).toDateString()
+}

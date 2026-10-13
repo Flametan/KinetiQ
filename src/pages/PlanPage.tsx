@@ -1,21 +1,22 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
-import ExercisePicker from '../components/ExercisePicker'
+import DayEditSheet from '../components/DayEditSheet'
 import Barbell from '../components/Barbell'
-import { DAY_CYCLE_LABELS, getDayIndexInCycle, getMesocycleWeek, isDeloadWeek } from '../lib/schedule'
+import { DAY_CYCLE_LABELS, getDayIndexInCycle, getMesocycleWeek, isDeloadWeek, isToday } from '../lib/schedule'
 import { generateId } from '../utils/id'
 import type { UserPlanSlot } from '../types'
 
 export default function PlanPage() {
   const plan = useAppStore((s) => s.activePlan)
   const allPlans = useAppStore((s) => s.allPlans)
+  const sessions = useAppStore((s) => s.sessions)
   const settings = useAppStore((s) => s.settings)
   const updatePlan = useAppStore((s) => s.updatePlan)
   const switchPlan = useAppStore((s) => s.switchPlan)
   const removePlan = useAppStore((s) => s.removePlan)
   const navigate = useNavigate()
-  const [openDayId, setOpenDayId] = useState<string | null>(null)
+  const [editingDayId, setEditingDayId] = useState<string | null>(null)
   const [editingSlot, setEditingSlot] = useState<{ dayId: string; slot: UserPlanSlot } | null>(null)
   const [showOtherPlans, setShowOtherPlans] = useState(false)
 
@@ -93,19 +94,64 @@ export default function PlanPage() {
   }
 
   const todayIndex = getDayIndexInCycle(plan.createdAt)
+  const suggestedDayId = plan.schedule[todayIndex]
+  const suggestedDay = plan.days.find((d) => d.id === suggestedDayId)
+  const trainedToday = sessions.some((s) => isToday(s.date))
   const deloadActive = settings.deloadEnabled && isDeloadWeek(plan.createdAt, settings.deloadIntervalWeeks)
   const mesoWeek = getMesocycleWeek(plan.createdAt)
   const archivedPlans = allPlans.filter((p) => p.id !== plan.id)
+  const editingDay = plan.days.find((d) => d.id === editingDayId)
 
   return (
     <div className="flex flex-col gap-6 pb-10">
-      <header className="flex items-center justify-between gap-3 border-b-[3px] border-ink pb-4 pt-2">
+      <header className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[.1em] text-brand-400">{plan.splitLabel}</p>
-          <h1 className="font-display mt-1 text-[26px] uppercase leading-[0.95] text-ink">{plan.variantName}</h1>
+          <h1 className="font-display mt-1 text-xl uppercase leading-[0.95] text-ink">{plan.variantName}</h1>
         </div>
-        <Barbell plates={plan.daysPerWeek} size="md" />
+        <Barbell plates={plan.daysPerWeek} size="sm" />
       </header>
+
+      {suggestedDay ? (
+        trainedToday ? (
+          <button
+            onClick={() => navigate('/training')}
+            className="press flex items-center justify-between gap-3 border border-ink bg-surface p-5 text-left"
+          >
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.1em] text-brand-400">Heute erledigt ✓</p>
+              <p className="font-display mt-1 text-lg text-ink">{suggestedDay.name}</p>
+            </div>
+            <span className="shrink-0 text-xs font-semibold text-dim">Nochmal trainieren →</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => navigate(`/training/${suggestedDay.id}`)}
+            className="press flex items-center justify-between gap-3 border border-ink bg-ink p-5 text-left text-on-ink"
+          >
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.1em] opacity-70">Heute</p>
+              <p className="font-display mt-1 text-xl uppercase">{suggestedDay.name}</p>
+              <p className="mt-0.5 text-xs opacity-70">{suggestedDay.slots.length} Übungen</p>
+            </div>
+            <span className="icon-btn bg-brand-500 text-white" aria-hidden>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </span>
+          </button>
+        )
+      ) : (
+        <div className="flex items-center justify-between gap-3 border border-line bg-panel2 p-5">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[.1em] text-dim">Heute</p>
+            <p className="font-display mt-1 text-lg text-ink">Ruhetag</p>
+          </div>
+          <button onClick={() => navigate('/training')} className="press text-xs font-semibold text-ink hover:text-brand-400">
+            Trotzdem trainieren →
+          </button>
+        </div>
+      )}
 
       {deloadActive && (
         <div className="border border-brand-400 bg-panel2 px-4 py-3">
@@ -118,16 +164,16 @@ export default function PlanPage() {
         <div className="flex gap-1.5">
           {plan.schedule.map((dayId, i) => {
             const day = plan.days.find((d) => d.id === dayId)
-            const isToday = i === todayIndex
+            const isTodayCol = i === todayIndex
             return (
               <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-                <span className={`text-[10px] font-semibold ${isToday ? 'text-brand-400' : 'text-dim'}`}>
+                <span className={`text-[10px] font-semibold ${isTodayCol ? 'text-brand-400' : 'text-dim'}`}>
                   {DAY_CYCLE_LABELS[i]}
                 </span>
                 <div
                   className={`flex h-10 w-full items-center justify-center text-[10px] font-medium ${
                     day ? 'bg-brand-500 text-white' : 'bg-panel2 text-dim'
-                  } ${isToday ? 'ring-2 ring-ink ring-offset-1 ring-offset-paper' : ''}`}
+                  } ${isTodayCol ? 'ring-2 ring-ink ring-offset-1 ring-offset-paper' : ''}`}
                 >
                   {day ? '' : '–'}
                 </div>
@@ -137,104 +183,25 @@ export default function PlanPage() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-2">
+        <h2 className="text-xs font-bold uppercase tracking-[.1em] text-dim">Deine Trainingstage</h2>
         {plan.days.map((day) => {
-          const isOpen = openDayId === day.id
+          const names = day.slots.map((s) => s.exerciseName).filter((n): n is string => !!n)
+          const preview = names.slice(0, 3).join(' · ') + (names.length > 3 ? ` +${names.length - 3} weitere` : '')
           return (
-            <div key={day.id} className="overflow-hidden border border-line bg-surface">
-              <button
-                onClick={() => setOpenDayId(isOpen ? null : day.id)}
-                className="flex w-full items-center justify-between px-4 py-3.5"
-              >
-                <div className="text-left">
-                  <p className="font-display text-base text-ink">{day.name}</p>
-                  <p className="text-xs text-dim">{day.slots.length} Übungen</p>
-                </div>
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`text-dim transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
-              {isOpen && (
-                <div className="flex flex-col border-t border-line px-4 py-3">
-                  {day.slots.map((slot, i) => {
-                    const next = day.slots[i + 1]
-                    const connected = !!next && !!slot.supersetGroup && slot.supersetGroup === next.supersetGroup
-                    const canReorder = !slot.supersetGroup
-                    return (
-                      <div key={slot.slotId} className="flex flex-col gap-2">
-                        <div
-                          className={`flex items-stretch gap-2 border bg-panel2 ${
-                            slot.supersetGroup ? 'border-brand-300' : 'border-line'
-                          }`}
-                        >
-                          <div className="flex w-11 shrink-0 flex-col border-r border-line">
-                            <button
-                              onClick={() => moveSlot(day.id, i, -1)}
-                              disabled={i === 0 || !canReorder}
-                              className="press flex min-h-[22px] flex-1 items-center justify-center text-dim hover:text-ink disabled:opacity-25"
-                              aria-label="Nach oben verschieben"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-                                <path d="m18 15-6-6-6 6" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => moveSlot(day.id, i, 1)}
-                              disabled={i === day.slots.length - 1 || !canReorder}
-                              className="press flex min-h-[22px] flex-1 items-center justify-center border-t border-line text-dim hover:text-ink disabled:opacity-25"
-                              aria-label="Nach unten verschieben"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-                                <path d="m6 9 6 6 6-6" />
-                              </svg>
-                            </button>
-                          </div>
-                          <button
-                            onClick={() => setEditingSlot({ dayId: day.id, slot })}
-                            className="press flex flex-1 items-center justify-between gap-3 px-3.5 py-3 text-left"
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-xs text-dim">{slot.label}</p>
-                              <p className="truncate text-sm font-semibold text-ink">
-                                {slot.exerciseName ?? 'Übung wählen'}
-                              </p>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              <span className="border border-line bg-surface px-2 py-1 text-xs font-semibold text-dim">
-                                {slot.sets} × {slot.repsMin}-{slot.repsMax}
-                              </span>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-dim">
-                                <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                              </svg>
-                            </div>
-                          </button>
-                        </div>
-                        {next && (
-                          <button
-                            onClick={() => toggleSuperset(day.id, i)}
-                            className={`mx-auto flex items-center gap-1 px-3 py-1 text-[11px] font-semibold ${
-                              connected ? 'text-brand-400' : 'text-dim hover:text-ink'
-                            }`}
-                          >
-                            {connected ? '⛓ Verbunden – trennen' : '+ Als Superset verbinden'}
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
+            <button
+              key={day.id}
+              onClick={() => setEditingDayId(day.id)}
+              className="press flex items-center justify-between gap-3 border border-line bg-surface px-4 py-3.5 text-left hover:border-ink"
+            >
+              <div className="min-w-0">
+                <p className="font-display text-base text-ink">{day.name}</p>
+                <p className="mt-0.5 truncate text-xs text-dim">{preview || `${day.slots.length} Übungen auswählen`}</p>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 text-dim">
+                <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+            </button>
           )
         })}
       </section>
@@ -243,7 +210,7 @@ export default function PlanPage() {
         <section>
           <button
             onClick={() => setShowOtherPlans((v) => !v)}
-            className="flex w-full items-center justify-between border border-line bg-surface px-4 py-3 text-left"
+            className="press flex w-full items-center justify-between border border-line bg-surface px-4 py-3 text-left"
           >
             <span className="text-sm font-semibold text-ink">Andere Pläne ({archivedPlans.length})</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={`text-dim transition-transform ${showOtherPlans ? 'rotate-180' : ''}`}>
@@ -261,13 +228,13 @@ export default function PlanPage() {
                   <div className="flex shrink-0 gap-2">
                     <button
                       onClick={() => switchPlan(p.id)}
-                      className="border border-ink px-3 py-1.5 text-xs font-semibold text-ink hover:bg-panel2"
+                      className="press border border-ink px-3 py-1.5 text-xs font-semibold text-ink hover:bg-panel2"
                     >
                       Aktivieren
                     </button>
                     <button
                       onClick={() => handleDeletePlan(p.id, p.variantName)}
-                      className="border border-line px-2 py-1.5 text-xs font-semibold text-dim hover:text-brand-400"
+                      className="icon-btn press border border-line text-dim hover:text-brand-400"
                       aria-label="Plan löschen"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -284,19 +251,21 @@ export default function PlanPage() {
 
       <button
         onClick={handleNewPlan}
-        className="border border-line py-3 text-sm font-semibold text-dim hover:border-ink hover:text-ink"
+        className="press border border-line py-3 text-sm font-semibold text-dim hover:border-ink hover:text-ink"
       >
         Neuen Plan erstellen
       </button>
 
-      {editingSlot && (
-        <ExercisePicker
-          open
-          onClose={() => setEditingSlot(null)}
-          label={editingSlot.slot.label}
-          movementPatternIds={editingSlot.slot.movementPatternIds}
-          currentExerciseId={editingSlot.slot.exerciseId}
-          onSelect={(ex) => selectExercise(editingSlot.dayId, editingSlot.slot.slotId, ex)}
+      {editingDay && (
+        <DayEditSheet
+          day={editingDay}
+          onClose={() => setEditingDayId(null)}
+          onSelectExercise={selectExercise}
+          onToggleSuperset={toggleSuperset}
+          onMoveSlot={moveSlot}
+          editingSlot={editingSlot}
+          onOpenPicker={(dayId, slot) => setEditingSlot({ dayId, slot })}
+          onClosePicker={() => setEditingSlot(null)}
         />
       )}
     </div>
