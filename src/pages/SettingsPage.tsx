@@ -5,8 +5,12 @@ import { movementPatternById } from '../data/movementPatterns'
 import { db } from '../db/db'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Snackbar from '../components/Snackbar'
+import ColorWheel from '../components/ColorWheel'
 import { useUndoableDelete } from '../hooks/useUndoableDelete'
 import type { CustomExercise, DataExport, ThemePreference, WeightUnit } from '../types'
+
+/** Hue des fest kodierten Standard-Rots (#c23b22) aus index.css – Startposition des Farbrads. */
+const DEFAULT_ACCENT_HUE = 9
 
 export default function SettingsPage() {
   const customExercises = useAppStore((s) => s.customExercises)
@@ -134,6 +138,29 @@ export default function SettingsPage() {
           ]}
           onChange={(theme) => updateSettings({ theme: theme as ThemePreference })}
         />
+      </section>
+
+      <section className="border border-line bg-surface p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-ink">Akzentfarbe</p>
+            <p className="mt-1 text-xs text-dim">Am Farbrad ziehen, um die App-Akzentfarbe anzupassen.</p>
+          </div>
+          {settings.accentHue !== null && (
+            <button
+              onClick={() => updateSettings({ accentHue: null })}
+              className="press text-xs font-semibold text-dim hover:text-ink"
+            >
+              Zurücksetzen
+            </button>
+          )}
+        </div>
+        <div className="mt-4">
+          <ColorWheel
+            hue={settings.accentHue ?? DEFAULT_ACCENT_HUE}
+            onChange={(hue) => updateSettings({ accentHue: hue })}
+          />
+        </div>
       </section>
 
       <section className="border border-line bg-surface p-4">

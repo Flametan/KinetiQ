@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter, HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useAppStore } from './store/useAppStore'
+import { applyAccentColor } from './lib/accentColor'
 import Layout from './components/Layout'
 import OnboardingPage from './pages/OnboardingPage'
 import PlanPage from './pages/PlanPage'
@@ -39,6 +40,7 @@ export default function App() {
   const loading = useAppStore((s) => s.loading)
   const init = useAppStore((s) => s.init)
   const theme = useAppStore((s) => s.settings.theme)
+  const accentHue = useAppStore((s) => s.settings.accentHue)
 
   useEffect(() => {
     init()
@@ -55,7 +57,8 @@ export default function App() {
       theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
     const meta = document.querySelector('meta[name="theme-color"]')
     meta?.setAttribute('content', prefersDark ? '#141316' : '#fafaf8')
-  }, [theme])
+    applyAccentColor(accentHue, prefersDark)
+  }, [theme, accentHue])
 
   if (loading) return <Splash />
 
