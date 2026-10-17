@@ -45,6 +45,8 @@ jobs:
 
       - name: Pages einrichten
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Build-Artifact hochladen
         uses: actions/upload-pages-artifact@v3
