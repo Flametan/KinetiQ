@@ -87,12 +87,12 @@ export default function ProgressPage() {
         </div>
       ) : (
         <>
-          <div className="scrollbar-none flex gap-1.5 overflow-x-auto pb-1">
+          <div className="flex flex-wrap gap-1.5">
             {VIEWS.map((v) => (
               <button
                 key={v.id}
                 onClick={() => setView(v.id)}
-                className={`shrink-0 px-3.5 py-2 text-sm font-semibold transition-colors ${
+                className={`press shrink-0 px-3.5 py-2 text-sm font-semibold transition-colors ${
                   view === v.id ? 'bg-ink text-on-ink' : 'bg-panel2 text-dim hover:text-ink'
                 }`}
               >
