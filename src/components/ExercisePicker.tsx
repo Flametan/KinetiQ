@@ -5,6 +5,7 @@ import { useAppStore } from '../store/useAppStore'
 import { generateId } from '../utils/id'
 import { EQUIPMENT_OPTIONS, inferEquipment, type Equipment } from '../lib/equipment'
 import { exerciseImageByName } from '../data/exerciseImages'
+import { assetUrl } from '../lib/assetUrl'
 import type { CustomExercise, ExerciseOption } from '../types'
 
 interface Props {
@@ -144,7 +145,7 @@ export default function ExercisePicker({
                       <span className="flex min-w-0 items-center gap-3">
                         {image && (
                           <img
-                            src={image}
+                            src={assetUrl(image)}
                             alt=""
                             loading="lazy"
                             className={`h-11 w-11 shrink-0 object-cover ${selected ? 'opacity-90' : ''}`}

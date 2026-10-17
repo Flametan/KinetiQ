@@ -3,8 +3,14 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Für den Capacitor-/lokalen Build liegt die App im Domain-Root ('/'), für den
+// GitHub-Pages-Build (eigenes Repo-Subpath) setzt die Deploy-Workflow VITE_BASE_PATH,
+// z. B. '/KinetiQ/'. Alle Asset-/Router-Pfade richten sich danach.
+const base = process.env.VITE_BASE_PATH || '/'
+
 // https://vite.dev/config/
 export default defineConfig({
+  base,
   define: {
     __STANDALONE_FILE__: 'false',
   },
@@ -22,7 +28,8 @@ export default defineConfig({
         background_color: '#fafaf8',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        start_url: base,
+        scope: base,
         icons: [
           {
             src: 'pwa-192x192.png',

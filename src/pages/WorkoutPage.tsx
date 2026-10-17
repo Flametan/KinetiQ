@@ -9,6 +9,7 @@ import { generateId } from '../utils/id'
 import { DEFAULT_BAR_WEIGHT, displayToKg, kgToDisplay, kgToUnit, unitLabel } from '../lib/units'
 import { isDeloadWeek } from '../lib/schedule'
 import { exerciseImageByName } from '../data/exerciseImages'
+import { assetUrl } from '../lib/assetUrl'
 import ExercisePicker from '../components/ExercisePicker'
 import PlateCalculatorModal from '../components/PlateCalculatorModal'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -331,7 +332,7 @@ export default function WorkoutPage() {
           <button onClick={() => setPickerSlotId(ex.slotId)} className="flex min-w-0 items-center gap-2.5 text-left">
             {ex.exerciseName && exerciseImageByName[ex.exerciseName] && (
               <img
-                src={exerciseImageByName[ex.exerciseName]}
+                src={assetUrl(exerciseImageByName[ex.exerciseName])}
                 alt=""
                 loading="lazy"
                 className="h-11 w-11 shrink-0 border border-line object-cover"
