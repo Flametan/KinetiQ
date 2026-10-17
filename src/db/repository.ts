@@ -1,6 +1,7 @@
 import { db } from './db'
 import type {
   AppSettings,
+  BodyMeasurement,
   BodyWeightEntry,
   CustomExercise,
   DataExport,
@@ -33,6 +34,10 @@ export interface DataRepository {
   getBodyWeights(): Promise<BodyWeightEntry[]>
   saveBodyWeight(entry: BodyWeightEntry): Promise<void>
   deleteBodyWeight(id: string): Promise<void>
+
+  getBodyMeasurements(): Promise<BodyMeasurement[]>
+  saveBodyMeasurement(entry: BodyMeasurement): Promise<void>
+  deleteBodyMeasurement(id: string): Promise<void>
 
   getExerciseNotes(): Promise<ExerciseNote[]>
   saveExerciseNote(note: ExerciseNote): Promise<void>
@@ -107,6 +112,18 @@ export const localRepository: DataRepository = {
     await db.bodyWeights.delete(id)
   },
 
+  async getBodyMeasurements() {
+    return db.bodyMeasurements.orderBy('date').toArray()
+  },
+
+  async saveBodyMeasurement(entry) {
+    await db.bodyMeasurements.put(entry)
+  },
+
+  async deleteBodyMeasurement(id) {
+    await db.bodyMeasurements.delete(id)
+  },
+
   async getExerciseNotes() {
     return db.exerciseNotes.toArray()
   },
@@ -129,14 +146,16 @@ export const localRepository: DataRepository = {
   },
 
   async exportAll() {
-    const [plans, customExercises, sessions, bodyWeights, exerciseNotes, settings] = await Promise.all([
-      db.plans.toArray(),
-      db.customExercises.toArray(),
-      db.sessions.toArray(),
-      db.bodyWeights.toArray(),
-      db.exerciseNotes.toArray(),
-      db.settings.get('app'),
-    ])
+    const [plans, customExercises, sessions, bodyWeights, exerciseNotes, settings, bodyMeasurements] =
+      await Promise.all([
+        db.plans.toArray(),
+        db.customExercises.toArray(),
+        db.sessions.toArray(),
+        db.bodyWeights.toArray(),
+        db.exerciseNotes.toArray(),
+        db.settings.get('app'),
+        db.bodyMeasurements.toArray(),
+      ])
     return {
       exportedAt: new Date().toISOString(),
       version: 1,
@@ -146,13 +165,14 @@ export const localRepository: DataRepository = {
       bodyWeights,
       exerciseNotes,
       settings: settings ?? DEFAULT_SETTINGS,
+      bodyMeasurements,
     }
   },
 
   async importAll(data) {
     await db.transaction(
       'rw',
-      [db.plans, db.customExercises, db.sessions, db.bodyWeights, db.exerciseNotes, db.settings],
+      [db.plans, db.customExercises, db.sessions, db.bodyWeights, db.exerciseNotes, db.settings, db.bodyMeasurements],
       async () => {
         await Promise.all([
           db.plans.clear(),
@@ -160,6 +180,7 @@ export const localRepository: DataRepository = {
           db.sessions.clear(),
           db.bodyWeights.clear(),
           db.exerciseNotes.clear(),
+          db.bodyMeasurements.clear(),
         ])
         await Promise.all([
           db.plans.bulkPut(data.plans ?? []),
@@ -167,6 +188,7 @@ export const localRepository: DataRepository = {
           db.sessions.bulkPut(data.sessions ?? []),
           db.bodyWeights.bulkPut(data.bodyWeights ?? []),
           db.exerciseNotes.bulkPut(data.exerciseNotes ?? []),
+          db.bodyMeasurements.bulkPut(data.bodyMeasurements ?? []),
           data.settings ? db.settings.put(data.settings) : Promise.resolve(),
         ])
       },

@@ -335,7 +335,7 @@ export default function WorkoutPage() {
                 src={assetUrl(exerciseImageByName[ex.exerciseName])}
                 alt=""
                 loading="lazy"
-                className="h-11 w-11 shrink-0 border border-line object-cover"
+                className="h-11 w-11 shrink-0 rounded-xl border border-line object-cover"
               />
             )}
             <p className="font-display truncate text-[17px] leading-tight text-ink">
@@ -475,7 +475,7 @@ export default function WorkoutPage() {
                         <span className="flex items-center gap-1">
                           {prev ? `${kgToDisplay(prev.weight, unit)}${unitLabel(unit)} × ${prev.reps}` : '—'}
                           {isPR && (
-                            <span className="shrink-0 bg-brand-500 px-1.5 py-0.5 text-[9px] font-bold text-white">PR</span>
+                            <span className="shrink-0 rounded-full bg-brand-500 px-1.5 py-0.5 text-[9px] font-bold text-white">PR</span>
                           )}
                         </span>
                         {suggestion !== null && (
@@ -505,7 +505,7 @@ export default function WorkoutPage() {
                           toggleSetCompleted(ex, i, isLast, groupKey)
                           if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10)
                         }}
-                        className={`press flex h-11 w-11 items-center justify-center border-2 transition-colors ${
+                        className={`press flex h-11 w-11 items-center justify-center rounded-xl border-2 transition-colors ${
                           set.completed ? 'border-ink bg-ink text-on-ink' : 'border-ink text-ink hover:bg-panel2'
                         }`}
                         aria-label="Satz erledigt"
@@ -522,7 +522,7 @@ export default function WorkoutPage() {
                           <button
                             key={v}
                             onClick={() => updateSet(ex.slotId, i, { rpe: set.rpe === v ? undefined : v })}
-                            className={`press flex h-9 w-9 items-center justify-center text-[11px] font-bold transition-colors ${
+                            className={`press flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold transition-colors ${
                               set.rpe === v ? 'bg-ink text-on-ink' : 'bg-panel2 text-dim hover:bg-line'
                             }`}
                           >
@@ -578,7 +578,7 @@ export default function WorkoutPage() {
             onClick={finish}
             disabled={!hasAnyLoggedSet || saved || saving}
             aria-busy={saving}
-            className="press min-h-11 bg-ink px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-on-ink disabled:opacity-40"
+            className="press min-h-11 rounded-full bg-ink px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-on-ink disabled:opacity-40"
           >
             {saved ? 'Gespeichert ✓' : saving ? 'Speichert…' : 'Beenden'}
           </button>
@@ -602,7 +602,7 @@ export default function WorkoutPage() {
           </button>
         </div>
         {deloadActive && (
-          <p className="mt-3 border border-brand-400 bg-panel2 px-3 py-1.5 text-xs font-semibold text-brand-400">
+          <p className="mt-3 rounded-2xl border border-brand-400 bg-panel2 px-3 py-1.5 text-xs font-semibold text-brand-400">
             Deload-Woche – Gewichte sind automatisch ~10% reduziert vorgeschlagen.
           </p>
         )}
@@ -640,30 +640,36 @@ export default function WorkoutPage() {
                   <span className="h-px flex-1 bg-line" />
                 </div>
               )}
-              <div className={isGrouped ? 'flex flex-col gap-5 bg-panel2 p-3.5' : ''}>
+              <div className={isGrouped ? 'flex flex-col gap-5 rounded-2xl bg-panel2 p-3.5' : ''}>
                 {block.map((ex) => (
                   <div key={ex.slotId}>{renderExerciseBody(ex)}</div>
                 ))}
               </div>
               {allHaveExercise && (
-                <div className="mt-3 flex items-center gap-2">
+                <div
+                  className={`mt-3 flex items-center gap-3 rounded-full px-3.5 py-2 transition-colors ${
+                    restRemaining > 0 ? 'bg-brand-500/15' : 'bg-panel2'
+                  }`}
+                >
                   <ClockMini />
-                  <span className="font-display text-sm text-brand-400">Pause {formatRest(restRemaining)}</span>
+                  <span className="font-display flex-1 text-base text-brand-400 tabular-nums">
+                    {formatRest(restRemaining)}
+                  </span>
                   <button
                     onClick={() => adjustRest(groupKey, lastEx.slotId, -15)}
-                    className="border border-ink px-2 py-0.5 text-xs font-semibold text-ink hover:bg-panel2"
+                    className="press rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-ink"
                   >
                     −15s
                   </button>
                   <button
                     onClick={() => adjustRest(groupKey, lastEx.slotId, 15)}
-                    className="border border-ink px-2 py-0.5 text-xs font-semibold text-ink hover:bg-panel2"
+                    className="press rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-ink"
                   >
                     +15s
                   </button>
                   <button
                     onClick={() => setRestTimers((r) => ({ ...r, [groupKey]: restDefault }))}
-                    className="border border-ink px-2 py-0.5 text-xs font-semibold text-ink hover:bg-panel2"
+                    className="press rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-ink"
                   >
                     Reset
                   </button>
@@ -691,20 +697,20 @@ export default function WorkoutPage() {
 
       {finishSummary && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-          <div className="w-full max-w-sm border-t-[3px] border-ink bg-surface p-6 text-center">
+          <div className="w-full max-w-sm rounded-3xl border border-line bg-surface p-6 text-center">
             <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-400">Neue Bestwerte</p>
             <h2 className="font-display mt-2 text-2xl uppercase text-ink">Glückwunsch</h2>
             <div className="mt-4 flex flex-col gap-2 text-left">
               {finishSummary.prs.map((pr, i) => (
-                <div key={i} className="flex items-center justify-between bg-panel2 px-3 py-2.5">
+                <div key={i} className="flex items-center justify-between rounded-xl bg-panel2 px-3 py-2.5">
                   <span className="text-sm font-medium text-ink">{pr.name}</span>
-                  <span className="bg-brand-500 px-2 py-0.5 text-sm font-bold text-white">{kgToDisplay(pr.weight, unit)} {unitLabel(unit)}</span>
+                  <span className="rounded-full bg-brand-500 px-2.5 py-0.5 text-sm font-bold text-white">{kgToDisplay(pr.weight, unit)} {unitLabel(unit)}</span>
                 </div>
               ))}
             </div>
             <button
               onClick={() => navigate('/progress')}
-              className="press mt-5 w-full bg-ink py-3 text-sm font-bold uppercase tracking-wide text-on-ink"
+              className="press mt-5 w-full rounded-full bg-ink py-3 text-sm font-bold uppercase tracking-wide text-on-ink"
             >
               Weiter
             </button>

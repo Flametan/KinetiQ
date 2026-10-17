@@ -48,7 +48,7 @@ export default function TrainingPage() {
       </header>
 
       {deloadActive && (
-        <div className="border border-brand-400 bg-panel2 px-4 py-3">
+        <div className="rounded-2xl border border-brand-400 bg-panel2 px-4 py-3">
           <p className="text-sm font-semibold text-brand-400">Deload-Woche (Woche {mesoWeek})</p>
           <p className="mt-0.5 text-xs text-dim">Gewichtsvorschläge sind diese Woche automatisch ~10% reduziert.</p>
         </div>
@@ -80,7 +80,7 @@ export default function TrainingPage() {
                 </p>
               </div>
               {isSuggested && (
-                <span className="bg-brand-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                <span className="rounded-full bg-brand-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
                   Heute
                 </span>
               )}

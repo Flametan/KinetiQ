@@ -222,13 +222,13 @@ export default function SettingsPage() {
         <div className="mt-3 flex gap-2">
           <button
             onClick={handleExport}
-            className="flex-1 border border-line py-2.5 text-sm font-semibold text-ink hover:border-ink"
+            className="flex-1 rounded-full border border-line py-2.5 text-sm font-semibold text-ink hover:border-ink"
           >
             Exportieren
           </button>
           <button
             onClick={handleImportClick}
-            className="flex-1 border border-line py-2.5 text-sm font-semibold text-ink hover:border-ink"
+            className="flex-1 rounded-full border border-line py-2.5 text-sm font-semibold text-ink hover:border-ink"
           >
             Importieren
           </button>
@@ -245,7 +245,7 @@ export default function SettingsPage() {
         </p>
         <button
           onClick={() => setConfirmReset(true)}
-          className="press mt-3 w-full border border-ink bg-ink py-2.5 text-sm font-bold text-on-ink hover:bg-brand-500 hover:text-white"
+          className="press mt-3 w-full rounded-full border border-ink bg-ink py-2.5 text-sm font-bold text-on-ink hover:bg-brand-500 hover:text-white"
         >
           Alle Daten zurücksetzen
         </button>
@@ -299,7 +299,7 @@ function SegmentedControl({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="flex border border-line">
+    <div className="flex overflow-hidden rounded-full border border-line">
       {options.map((opt) => (
         <button
           key={opt.value}
@@ -324,7 +324,7 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: b
       aria-checked={checked}
     >
       <span
-        className={`absolute top-0.5 h-4 w-4 bg-surface transition-transform ${checked ? 'translate-x-[22px] bg-paper' : 'translate-x-0.5 bg-ink'}`}
+        className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface transition-transform ${checked ? 'translate-x-[22px] bg-paper' : 'translate-x-0.5 bg-ink'}`}
       />
     </button>
   )

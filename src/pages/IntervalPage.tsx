@@ -111,7 +111,7 @@ export default function IntervalPage() {
           <>
             <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-400">Fertig</p>
             <h1 className="font-display text-3xl uppercase text-ink">Intervall-Training beendet</h1>
-            <button onClick={stop} className="press mt-4 bg-ink px-6 py-3 text-sm font-bold uppercase tracking-wide text-on-ink">
+            <button onClick={stop} className="press mt-4 rounded-full bg-ink px-6 py-3 text-sm font-bold uppercase tracking-wide text-on-ink">
               Zurück
             </button>
           </>
@@ -125,11 +125,11 @@ export default function IntervalPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setPaused((p) => !p)}
-                className="border border-ink px-5 py-2.5 text-sm font-bold text-ink hover:bg-panel2"
+                className="rounded-full border border-ink px-5 py-2.5 text-sm font-bold text-ink hover:bg-panel2"
               >
                 {paused ? 'Weiter' : 'Pause'}
               </button>
-              <button onClick={stop} className="border border-line px-5 py-2.5 text-sm font-bold text-dim hover:text-ink">
+              <button onClick={stop} className="rounded-full border border-line px-5 py-2.5 text-sm font-bold text-dim hover:text-ink">
                 Abbrechen
               </button>
             </div>
@@ -155,7 +155,7 @@ export default function IntervalPage() {
 
       <section>
         <p className="mb-2 text-xs font-bold uppercase tracking-wide text-dim">Format</p>
-        <div className="flex border border-line">
+        <div className="flex overflow-hidden rounded-full border border-line">
           <button
             onClick={() => setMode('circuit')}
             className={`flex-1 border-r border-line py-2.5 text-sm font-semibold ${mode === 'circuit' ? 'bg-ink text-on-ink' : 'text-ink hover:bg-panel2'}`}
@@ -181,14 +181,14 @@ export default function IntervalPage() {
             placeholder="z.B. Burpees"
             className="flex-1 border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
           />
-          <button onClick={addStation} className="press bg-ink px-4 text-sm font-bold text-on-ink">
+          <button onClick={addStation} className="press rounded-xl bg-ink px-4 text-sm font-bold text-on-ink">
             +
           </button>
         </div>
         {stations.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {stations.map((s, i) => (
-              <span key={i} className="flex items-center gap-1.5 border border-line bg-surface px-2.5 py-1.5 text-xs font-semibold text-ink">
+              <span key={i} className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1.5 text-xs font-semibold text-ink">
                 {s}
                 <button onClick={() => removeStation(i)} className="text-dim hover:text-brand-400" aria-label="Entfernen">
                   ✕
@@ -215,14 +215,14 @@ export default function IntervalPage() {
       <div className="flex gap-2">
         <button
           onClick={() => navigate(-1)}
-          className="flex-1 border border-line py-3 text-sm font-semibold text-dim hover:border-ink hover:text-ink"
+          className="flex-1 rounded-full border border-line py-3 text-sm font-semibold text-dim hover:border-ink hover:text-ink"
         >
           Zurück
         </button>
         <button
           onClick={start}
           disabled={stations.length === 0}
-          className="press flex-1 bg-ink py-3 text-sm font-bold uppercase tracking-wide text-on-ink disabled:opacity-40"
+          className="press flex-1 rounded-full bg-ink py-3 text-sm font-bold uppercase tracking-wide text-on-ink disabled:opacity-40"
         >
           Starten
         </button>

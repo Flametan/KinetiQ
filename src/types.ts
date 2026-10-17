@@ -130,6 +130,42 @@ export interface BodyWeightEntry {
   createdAt: number
 }
 
+export type MeasurementType =
+  | 'brust'
+  | 'taille'
+  | 'huefte'
+  | 'bizepsLinks'
+  | 'bizepsRechts'
+  | 'oberschenkelLinks'
+  | 'oberschenkelRechts'
+  | 'wadeLinks'
+  | 'wadeRechts'
+  | 'schultern'
+  | 'nacken'
+
+export interface BodyMeasurement {
+  id: string
+  date: string
+  type: MeasurementType
+  /** Umfang in cm. */
+  value: number
+  createdAt: number
+}
+
+export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
+  brust: 'Brust',
+  taille: 'Taille',
+  huefte: 'Hüfte',
+  bizepsLinks: 'Bizeps links',
+  bizepsRechts: 'Bizeps rechts',
+  oberschenkelLinks: 'Oberschenkel links',
+  oberschenkelRechts: 'Oberschenkel rechts',
+  wadeLinks: 'Wade links',
+  wadeRechts: 'Wade rechts',
+  schultern: 'Schultern',
+  nacken: 'Nacken',
+}
+
 /** Persistenter Hinweis/Cue zu einer Übung (übungsbezogen, nicht sessionsbezogen). */
 export interface ExerciseNote {
   exerciseId: string
@@ -169,4 +205,5 @@ export interface DataExport {
   bodyWeights: BodyWeightEntry[]
   exerciseNotes?: ExerciseNote[]
   settings?: AppSettings
+  bodyMeasurements?: BodyMeasurement[]
 }

@@ -81,7 +81,7 @@ export default function OnboardingPage() {
                     <div key={i} className="flex flex-1 flex-col items-center gap-1">
                       <span className="text-[10px] font-semibold text-dim">{DAY_CYCLE_LABELS[i]}</span>
                       <div
-                        className={`h-8 w-full ${dayId ? 'bg-brand-500' : 'bg-panel2'}`}
+                        className={`h-8 w-full rounded-lg ${dayId ? 'bg-brand-500' : 'bg-panel2'}`}
                         title={day?.name}
                       />
                     </div>

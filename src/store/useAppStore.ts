@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { localRepository as repo } from '../db/repository'
 import type {
   AppSettings,
+  BodyMeasurement,
   BodyWeightEntry,
   CustomExercise,
   DataExport,
@@ -18,6 +19,7 @@ interface AppState {
   customExercises: CustomExercise[]
   sessions: WorkoutSession[]
   bodyWeights: BodyWeightEntry[]
+  bodyMeasurements: BodyMeasurement[]
   exerciseNotes: ExerciseNote[]
   settings: AppSettings
   init: () => Promise<void>
@@ -32,6 +34,8 @@ interface AppState {
   removeSession: (id: string) => Promise<void>
   addBodyWeight: (entry: BodyWeightEntry) => Promise<void>
   removeBodyWeight: (id: string) => Promise<void>
+  addBodyMeasurement: (entry: BodyMeasurement) => Promise<void>
+  removeBodyMeasurement: (id: string) => Promise<void>
   setExerciseNote: (exerciseId: string, note: string) => Promise<void>
   removeExerciseNote: (exerciseId: string) => Promise<void>
   updateSettings: (patch: Partial<AppSettings>) => Promise<void>
@@ -46,19 +50,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   customExercises: [],
   sessions: [],
   bodyWeights: [],
+  bodyMeasurements: [],
   exerciseNotes: [],
   settings: DEFAULT_SETTINGS,
 
   init: async () => {
-    const [plan, allPlans, customExercises, sessions, bodyWeights, exerciseNotes, settings] = await Promise.all([
-      repo.getActivePlan(),
-      repo.getAllPlans(),
-      repo.getCustomExercises(),
-      repo.getSessions(),
-      repo.getBodyWeights(),
-      repo.getExerciseNotes(),
-      repo.getSettings(),
-    ])
+    const [plan, allPlans, customExercises, sessions, bodyWeights, exerciseNotes, settings, bodyMeasurements] =
+      await Promise.all([
+        repo.getActivePlan(),
+        repo.getAllPlans(),
+        repo.getCustomExercises(),
+        repo.getSessions(),
+        repo.getBodyWeights(),
+        repo.getExerciseNotes(),
+        repo.getSettings(),
+        repo.getBodyMeasurements(),
+      ])
     set({
       activePlan: plan ?? null,
       allPlans,
@@ -67,6 +74,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       bodyWeights,
       exerciseNotes,
       settings,
+      bodyMeasurements,
       loading: false,
     })
   },
@@ -154,6 +162,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   removeBodyWeight: async (id) => {
     await repo.deleteBodyWeight(id)
     set((s) => ({ bodyWeights: s.bodyWeights.filter((b) => b.id !== id) }))
+  },
+
+  addBodyMeasurement: async (entry) => {
+    await repo.saveBodyMeasurement(entry)
+    set((s) => ({
+      bodyMeasurements: [...s.bodyMeasurements.filter((b) => b.id !== entry.id), entry].sort((a, b) =>
+        a.date.localeCompare(b.date),
+      ),
+    }))
+  },
+
+  removeBodyMeasurement: async (id) => {
+    await repo.deleteBodyMeasurement(id)
+    set((s) => ({ bodyMeasurements: s.bodyMeasurements.filter((b) => b.id !== id) }))
   },
 
   setExerciseNote: async (exerciseId, note) => {

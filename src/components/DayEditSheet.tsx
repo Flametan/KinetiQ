@@ -24,12 +24,15 @@ export default function DayEditSheet({
   onClosePicker,
 }: Props) {
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60" onClick={onClose}>
       <div
-        className="max-h-[88dvh] w-full max-w-md overflow-hidden border-t-[3px] border-ink bg-surface shadow-2xl"
+        className="max-h-[88dvh] w-full max-w-md overflow-hidden rounded-t-3xl border border-line bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+        <div className="flex justify-center pt-2.5">
+          <div className="h-1 w-10 rounded-full bg-line" />
+        </div>
+        <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[.1em] text-dim">Tag bearbeiten</p>
             <h2 className="font-display text-lg text-ink">{day.name}</h2>

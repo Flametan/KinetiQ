@@ -20,11 +20,14 @@ export default function PlateCalculatorModal({ open, onClose, initialWeight }: P
   const label = unitLabel(unit)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={onClose}>
       <div
-        className="w-full max-w-md overflow-hidden border-t-[3px] border-ink bg-surface p-5 shadow-2xl"
+        className="w-full max-w-md overflow-hidden rounded-t-3xl border border-line bg-surface p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="flex justify-center pb-2">
+          <div className="h-1 w-10 rounded-full bg-line" />
+        </div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-base text-ink">Plattenrechner</h2>
           <button onClick={onClose} className="icon-btn press text-dim hover:bg-panel2 hover:text-ink" aria-label="Schließen">

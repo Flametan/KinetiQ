@@ -171,7 +171,7 @@ export default function PlanPage() {
       )}
 
       {deloadActive && (
-        <div className="border border-brand-400 bg-panel2 px-4 py-3">
+        <div className="rounded-2xl border border-brand-400 bg-panel2 px-4 py-3">
           <p className="text-sm font-semibold text-brand-400">Deload-Woche (Woche {mesoWeek})</p>
           <p className="mt-0.5 text-xs text-dim">Gewichtsvorschläge im Training sind diese Woche automatisch ~10% reduziert.</p>
         </div>
@@ -188,7 +188,7 @@ export default function PlanPage() {
                   {DAY_CYCLE_LABELS[i]}
                 </span>
                 <div
-                  className={`flex h-10 w-full items-center justify-center text-[10px] font-medium ${
+                  className={`flex h-10 w-full items-center justify-center rounded-xl text-[10px] font-medium ${
                     day ? 'bg-brand-500 text-white' : 'bg-panel2 text-dim'
                   } ${isTodayCol ? 'ring-2 ring-ink ring-offset-1 ring-offset-paper' : ''}`}
                 >
@@ -268,7 +268,7 @@ export default function PlanPage() {
 
       <button
         onClick={handleNewPlan}
-        className="press border border-line py-3 text-sm font-semibold text-dim hover:border-ink hover:text-ink"
+        className="press rounded-full border border-line py-3 text-sm font-semibold text-dim hover:border-ink hover:text-ink"
       >
         Neuen Plan erstellen
       </button>
