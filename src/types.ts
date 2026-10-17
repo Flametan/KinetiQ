@@ -130,6 +130,14 @@ export interface BodyWeightEntry {
   createdAt: number
 }
 
+/** Fortschrittsfoto, lokal als Blob gespeichert (nicht Teil des JSON-Backups/Exports). */
+export interface ProgressPhoto {
+  id: string
+  date: string
+  image: Blob
+  createdAt: number
+}
+
 export type MeasurementType =
   | 'brust'
   | 'taille'

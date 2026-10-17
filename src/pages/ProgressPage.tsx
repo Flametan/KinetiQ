@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useAppStore } from '../store/useAppStore'
 import {
@@ -17,10 +17,18 @@ import MuscleRadarChart from '../components/MuscleRadarChart'
 import Snackbar from '../components/Snackbar'
 import { useUndoableDelete } from '../hooks/useUndoableDelete'
 import { displayToKg, kgToDisplay, unitLabel } from '../lib/units'
-import type { BodyMeasurement, BodyWeightEntry, CustomExercise, MeasurementType, WeightUnit, WorkoutSession } from '../types'
+import type {
+  BodyMeasurement,
+  BodyWeightEntry,
+  CustomExercise,
+  MeasurementType,
+  ProgressPhoto,
+  WeightUnit,
+  WorkoutSession,
+} from '../types'
 import { MEASUREMENT_LABELS } from '../types'
 
-type View = 'exercise' | 'history' | 'calendar' | 'balance' | 'report' | 'bodyweight' | 'measurements'
+type View = 'exercise' | 'history' | 'calendar' | 'balance' | 'report' | 'bodyweight' | 'measurements' | 'photos'
 
 const VIEWS: { id: View; label: string }[] = [
   { id: 'exercise', label: 'Nach Übung' },
@@ -30,6 +38,7 @@ const VIEWS: { id: View; label: string }[] = [
   { id: 'report', label: 'Monatsbericht' },
   { id: 'bodyweight', label: 'Körpergewicht' },
   { id: 'measurements', label: 'Körpermessungen' },
+  { id: 'photos', label: 'Fotos' },
 ]
 
 const tooltipStyle = {
@@ -92,26 +101,27 @@ export default function ProgressPage() {
         <StatCard label="Serie (Tage)" value={streak} />
       </section>
 
-      {sessions.length === 0 ? (
+      <div className="flex flex-wrap gap-1.5">
+        {VIEWS.map((v) => (
+          <button
+            key={v.id}
+            onClick={() => setView(v.id)}
+            className={`press shrink-0 rounded-full px-3.5 py-2 text-sm font-semibold transition-colors ${
+              view === v.id ? 'bg-ink text-on-ink' : 'bg-panel2 text-dim hover:text-ink'
+            }`}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+
+      {sessions.length === 0 &&
+      (view === 'exercise' || view === 'history' || view === 'calendar' || view === 'balance' || view === 'report') ? (
         <div className="rounded-2xl border border-line bg-surface p-6 text-center text-sm text-dim">
           Noch keine Trainings geloggt. Starte dein erstes Training, um hier deinen Fortschritt zu sehen.
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap gap-1.5">
-            {VIEWS.map((v) => (
-              <button
-                key={v.id}
-                onClick={() => setView(v.id)}
-                className={`press shrink-0 rounded-full px-3.5 py-2 text-sm font-semibold transition-colors ${
-                  view === v.id ? 'bg-ink text-on-ink' : 'bg-panel2 text-dim hover:text-ink'
-                }`}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
-
           {view === 'exercise' && (
             <>
               <section>
@@ -242,6 +252,8 @@ export default function ProgressPage() {
           {view === 'bodyweight' && <BodyWeightView unit={unit} />}
 
           {view === 'measurements' && <MeasurementsView />}
+
+          {view === 'photos' && <ProgressPhotosView />}
         </>
       )}
     </div>
@@ -545,6 +557,92 @@ function MeasurementsView() {
         />
       )}
     </section>
+  )
+}
+
+function ProgressPhotosView() {
+  const progressPhotos = useAppStore((s) => s.progressPhotos)
+  const addProgressPhoto = useAppStore((s) => s.addProgressPhoto)
+  const removeProgressPhoto = useAppStore((s) => s.removeProgressPhoto)
+  const photoDelete = useUndoableDelete<ProgressPhoto>((p) => removeProgressPhoto(p.id))
+  const visible = [...progressPhotos.filter((p) => !photoDelete.isPending(p.id))].reverse()
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return
+    for (const file of Array.from(files)) {
+      await addProgressPhoto({
+        id: generateId('photo'),
+        date: new Date().toISOString(),
+        image: file,
+        createdAt: Date.now(),
+      })
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-4">
+      <label className="press flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-line bg-surface py-5 text-sm font-semibold text-dim hover:text-ink">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z" />
+          <circle cx="12" cy="13" r="4" />
+        </svg>
+        Foto hinzufügen
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            void handleFiles(e.target.files)
+            e.target.value = ''
+          }}
+        />
+      </label>
+
+      {visible.length === 0 ? (
+        <div className="rounded-2xl border border-line bg-surface p-6 text-center text-sm text-dim">
+          Noch keine Fortschrittsfotos. Dokumentiere deine Veränderung über die Zeit.
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {visible.map((photo) => (
+            <PhotoThumb key={photo.id} photo={photo} onDelete={() => photoDelete.triggerDelete(photo)} />
+          ))}
+        </div>
+      )}
+
+      {photoDelete.pending && (
+        <Snackbar message="Foto gelöscht" actionLabel="Rückgängig" onAction={photoDelete.undo} />
+      )}
+
+      <p className="text-center text-[11px] text-dim">
+        Fotos werden nur lokal auf diesem Gerät gespeichert und sind nicht Teil des Datenexports.
+      </p>
+    </section>
+  )
+}
+
+function PhotoThumb({ photo, onDelete }: { photo: ProgressPhoto; onDelete: () => void }) {
+  const url = useMemo(() => URL.createObjectURL(photo.image), [photo.image])
+  useEffect(() => () => URL.revokeObjectURL(url), [url])
+
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-line bg-surface">
+      <img src={url} alt="Fortschrittsfoto" className="aspect-square w-full object-cover" />
+      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent px-2.5 py-2">
+        <span className="text-xs font-medium text-white">{formatFullDate(photo.date)}</span>
+        <button
+          onClick={onDelete}
+          className="icon-btn press text-white/80 hover:text-white"
+          aria-label="Löschen"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
+          </svg>
+        </button>
+      </div>
+    </div>
   )
 }
 

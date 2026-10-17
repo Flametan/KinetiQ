@@ -5,6 +5,7 @@ import type {
   BodyWeightEntry,
   CustomExercise,
   ExerciseNote,
+  ProgressPhoto,
   UserPlan,
   WorkoutSession,
 } from '../types'
@@ -17,6 +18,7 @@ export class KinetiqDB extends Dexie {
   exerciseNotes!: Table<ExerciseNote, string>
   settings!: Table<AppSettings, string>
   bodyMeasurements!: Table<BodyMeasurement, string>
+  progressPhotos!: Table<ProgressPhoto, string>
 
   constructor() {
     super('kinetiq')
@@ -47,6 +49,16 @@ export class KinetiqDB extends Dexie {
       exerciseNotes: 'exerciseId, updatedAt',
       settings: 'id',
       bodyMeasurements: 'id, type, date, createdAt',
+    })
+    this.version(5).stores({
+      plans: 'id, active, createdAt',
+      customExercises: 'id, movementPatternId, createdAt',
+      sessions: 'id, planId, planDayId, date, startedAt',
+      bodyWeights: 'id, date, createdAt',
+      exerciseNotes: 'exerciseId, updatedAt',
+      settings: 'id',
+      bodyMeasurements: 'id, type, date, createdAt',
+      progressPhotos: 'id, date, createdAt',
     })
   }
 }
