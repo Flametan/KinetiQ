@@ -1,18 +1,19 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Bordeaux — primary accent. 400 = vivid, used for active states/links/CTAs.
-     500 = deeper solid-fill tone for badges/buttons with light text on top. */
-  --color-brand-50: #f8e9ec;
-  --color-brand-100: #efc9d1;
-  --color-brand-200: #de96a5;
-  --color-brand-300: #c96a7f;
-  --color-brand-400: #c1314d;
-  --color-brand-500: #9c2740;
-  --color-brand-600: #7d1f33;
-  --color-brand-700: #5e1726;
-  --color-brand-800: #450f1b;
-  --color-brand-900: #2d0a12;
+  /* Performance red — data callouts, labels, selected states, badges.
+     300-600 hier sind die dunkel-optimierten Töne, da Dunkel jetzt Standard ist
+     (siehe [data-theme='light'] weiter unten für die helleren Pendants). */
+  --color-brand-50: #fbeae6;
+  --color-brand-100: #f5cfc5;
+  --color-brand-200: #eaa594;
+  --color-brand-300: #e8957e;
+  --color-brand-400: #e26a4f;
+  --color-brand-500: #c23b22;
+  --color-brand-600: #d9492c;
+  --color-brand-700: #87240f;
+  --color-brand-800: #6b1b09;
+  --color-brand-900: #4f1405;
 
   /* Neutrals — dark-by-default (see :root / [data-theme] below for the light variant) */
   --color-paper: #0e0d10;
@@ -48,16 +49,16 @@ html {
   --color-ink: #1c1a1b;
   --color-dim: #716d6c;
   --color-line: #e4dfde;
-  --color-brand-300: #c1314d;
-  --color-brand-400: #9c2740;
-  --color-brand-500: #9c2740;
-  --color-brand-600: #7d1f33;
+  --color-brand-300: #dc7860;
+  --color-brand-400: #a52e1a;
+  --color-brand-500: #c23b22;
+  --color-brand-600: #a52e1a;
   --color-surface: #ffffff;
   --color-on-ink: #faf8f7;
 }
 
 /* ...oder automatisch, wenn Darstellung="System" (kein data-theme gesetzt) und OS Hell bevorzugt.
-   Ohne gesetzte Präferenz bleibt es beim dunklen Bordeaux-Theme (siehe @theme oben). */
+   Ohne gesetzte Präferenz bleibt es beim dunklen Theme (siehe @theme oben). */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
     --color-paper: #faf8f7;
@@ -65,10 +66,10 @@ html {
     --color-ink: #1c1a1b;
     --color-dim: #716d6c;
     --color-line: #e4dfde;
-    --color-brand-300: #c1314d;
-    --color-brand-400: #9c2740;
-    --color-brand-500: #9c2740;
-    --color-brand-600: #7d1f33;
+    --color-brand-300: #dc7860;
+    --color-brand-400: #a52e1a;
+    --color-brand-500: #c23b22;
+    --color-brand-600: #a52e1a;
     --color-surface: #ffffff;
     --color-on-ink: #faf8f7;
     color-scheme: light;
