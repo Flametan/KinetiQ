@@ -130,6 +130,14 @@ export interface BodyWeightEntry {
   createdAt: number
 }
 
+/** Fortschrittsfoto, lokal als Blob gespeichert (nicht Teil des JSON-Backups/Exports). */
+export interface ProgressPhoto {
+  id: string
+  date: string
+  image: Blob
+  createdAt: number
+}
+
 export type MeasurementType =
   | 'brust'
   | 'taille'
@@ -184,6 +192,8 @@ export interface AppSettings {
   remindersEnabled: boolean
   deloadEnabled: boolean
   deloadIntervalWeeks: number
+  /** Benutzerdefinierter Akzentfarbton (0-360°). null = Standard-Rot aus index.css. */
+  accentHue: number | null
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -193,6 +203,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   remindersEnabled: false,
   deloadEnabled: true,
   deloadIntervalWeeks: 4,
+  accentHue: null,
 }
 
 /** Vollständiger Export aller lokalen Nutzerdaten (für Backup/Übertragung). */

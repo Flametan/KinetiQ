@@ -7,6 +7,7 @@ import type {
   CustomExercise,
   DataExport,
   ExerciseNote,
+  ProgressPhoto,
   UserPlan,
   WorkoutSession,
 } from '../types'
@@ -20,6 +21,7 @@ interface AppState {
   sessions: WorkoutSession[]
   bodyWeights: BodyWeightEntry[]
   bodyMeasurements: BodyMeasurement[]
+  progressPhotos: ProgressPhoto[]
   exerciseNotes: ExerciseNote[]
   settings: AppSettings
   init: () => Promise<void>
@@ -36,6 +38,8 @@ interface AppState {
   removeBodyWeight: (id: string) => Promise<void>
   addBodyMeasurement: (entry: BodyMeasurement) => Promise<void>
   removeBodyMeasurement: (id: string) => Promise<void>
+  addProgressPhoto: (entry: ProgressPhoto) => Promise<void>
+  removeProgressPhoto: (id: string) => Promise<void>
   setExerciseNote: (exerciseId: string, note: string) => Promise<void>
   removeExerciseNote: (exerciseId: string) => Promise<void>
   updateSettings: (patch: Partial<AppSettings>) => Promise<void>
@@ -51,21 +55,32 @@ export const useAppStore = create<AppState>((set, get) => ({
   sessions: [],
   bodyWeights: [],
   bodyMeasurements: [],
+  progressPhotos: [],
   exerciseNotes: [],
   settings: DEFAULT_SETTINGS,
 
   init: async () => {
-    const [plan, allPlans, customExercises, sessions, bodyWeights, exerciseNotes, settings, bodyMeasurements] =
-      await Promise.all([
-        repo.getActivePlan(),
-        repo.getAllPlans(),
-        repo.getCustomExercises(),
-        repo.getSessions(),
-        repo.getBodyWeights(),
-        repo.getExerciseNotes(),
-        repo.getSettings(),
-        repo.getBodyMeasurements(),
-      ])
+    const [
+      plan,
+      allPlans,
+      customExercises,
+      sessions,
+      bodyWeights,
+      exerciseNotes,
+      settings,
+      bodyMeasurements,
+      progressPhotos,
+    ] = await Promise.all([
+      repo.getActivePlan(),
+      repo.getAllPlans(),
+      repo.getCustomExercises(),
+      repo.getSessions(),
+      repo.getBodyWeights(),
+      repo.getExerciseNotes(),
+      repo.getSettings(),
+      repo.getBodyMeasurements(),
+      repo.getProgressPhotos(),
+    ])
     set({
       activePlan: plan ?? null,
       allPlans,
@@ -75,6 +90,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       exerciseNotes,
       settings,
       bodyMeasurements,
+      progressPhotos,
       loading: false,
     })
   },
@@ -176,6 +192,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   removeBodyMeasurement: async (id) => {
     await repo.deleteBodyMeasurement(id)
     set((s) => ({ bodyMeasurements: s.bodyMeasurements.filter((b) => b.id !== id) }))
+  },
+
+  addProgressPhoto: async (entry) => {
+    await repo.saveProgressPhoto(entry)
+    set((s) => ({
+      progressPhotos: [...s.progressPhotos.filter((p) => p.id !== entry.id), entry].sort((a, b) =>
+        a.date.localeCompare(b.date),
+      ),
+    }))
+  },
+
+  removeProgressPhoto: async (id) => {
+    await repo.deleteProgressPhoto(id)
+    set((s) => ({ progressPhotos: s.progressPhotos.filter((p) => p.id !== id) }))
   },
 
   setExerciseNote: async (exerciseId, note) => {

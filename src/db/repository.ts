@@ -6,6 +6,7 @@ import type {
   CustomExercise,
   DataExport,
   ExerciseNote,
+  ProgressPhoto,
   UserPlan,
   WorkoutSession,
 } from '../types'
@@ -42,6 +43,10 @@ export interface DataRepository {
   getExerciseNotes(): Promise<ExerciseNote[]>
   saveExerciseNote(note: ExerciseNote): Promise<void>
   deleteExerciseNote(exerciseId: string): Promise<void>
+
+  getProgressPhotos(): Promise<ProgressPhoto[]>
+  saveProgressPhoto(entry: ProgressPhoto): Promise<void>
+  deleteProgressPhoto(id: string): Promise<void>
 
   getSettings(): Promise<AppSettings>
   saveSettings(settings: AppSettings): Promise<void>
@@ -134,6 +139,18 @@ export const localRepository: DataRepository = {
 
   async deleteExerciseNote(exerciseId) {
     await db.exerciseNotes.delete(exerciseId)
+  },
+
+  async getProgressPhotos() {
+    return db.progressPhotos.orderBy('date').toArray()
+  },
+
+  async saveProgressPhoto(entry) {
+    await db.progressPhotos.put(entry)
+  },
+
+  async deleteProgressPhoto(id) {
+    await db.progressPhotos.delete(id)
   },
 
   async getSettings() {
