@@ -53,6 +53,10 @@ export interface UserPlanSlot {
   movementPatternIds: string[]
   exerciseId: string | null
   exerciseName: string | null
+  /** Individuelle Pausenzeit in Sekunden; unset = Standardwert verwenden. */
+  restSeconds?: number
+  /** Slots mit derselben ID werden als Superset ohne volle Pause dazwischen behandelt. */
+  supersetGroup?: string | null
 }
 
 export interface UserPlanDay {
@@ -81,11 +85,16 @@ export interface CustomExercise {
   createdAt: number
 }
 
+export type SetType = 'normal' | 'warmup' | 'failure' | 'dropset'
+
 export interface SetEntry {
   setNumber: number
   reps: number
   weight: number
   completed: boolean
+  type?: SetType
+  /** Rate of Perceived Exertion, 1-10 (optional). */
+  rpe?: number
 }
 
 export interface ExerciseLogEntry {
@@ -97,6 +106,8 @@ export interface ExerciseLogEntry {
   repsMin: number
   repsMax: number
   sets: SetEntry[]
+  notes?: string
+  supersetGroup?: string | null
 }
 
 export interface WorkoutSession {
@@ -108,4 +119,91 @@ export interface WorkoutSession {
   startedAt: number
   finishedAt: number | null
   exercises: ExerciseLogEntry[]
+  /** Freitext-Notiz zur gesamten Session (z.B. Tagesform), optional. */
+  note?: string
+}
+
+export interface BodyWeightEntry {
+  id: string
+  date: string
+  weight: number
+  createdAt: number
+}
+
+export type MeasurementType =
+  | 'brust'
+  | 'taille'
+  | 'huefte'
+  | 'bizepsLinks'
+  | 'bizepsRechts'
+  | 'oberschenkelLinks'
+  | 'oberschenkelRechts'
+  | 'wadeLinks'
+  | 'wadeRechts'
+  | 'schultern'
+  | 'nacken'
+
+export interface BodyMeasurement {
+  id: string
+  date: string
+  type: MeasurementType
+  /** Umfang in cm. */
+  value: number
+  createdAt: number
+}
+
+export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
+  brust: 'Brust',
+  taille: 'Taille',
+  huefte: 'Hüfte',
+  bizepsLinks: 'Bizeps links',
+  bizepsRechts: 'Bizeps rechts',
+  oberschenkelLinks: 'Oberschenkel links',
+  oberschenkelRechts: 'Oberschenkel rechts',
+  wadeLinks: 'Wade links',
+  wadeRechts: 'Wade rechts',
+  schultern: 'Schultern',
+  nacken: 'Nacken',
+}
+
+/** Persistenter Hinweis/Cue zu einer Übung (übungsbezogen, nicht sessionsbezogen). */
+export interface ExerciseNote {
+  exerciseId: string
+  note: string
+  updatedAt: number
+}
+
+export type WeightUnit = 'kg' | 'lb'
+export type ThemePreference = 'light' | 'dark' | 'system'
+
+/** Einzeiliger Key-Value-Store für App-weite Einstellungen (eine feste Zeile mit id='app'). */
+export interface AppSettings {
+  id: 'app'
+  weightUnit: WeightUnit
+  theme: ThemePreference
+  remindersEnabled: boolean
+  deloadEnabled: boolean
+  deloadIntervalWeeks: number
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  id: 'app',
+  weightUnit: 'kg',
+  theme: 'system',
+  remindersEnabled: false,
+  deloadEnabled: true,
+  deloadIntervalWeeks: 4,
+}
+
+/** Vollständiger Export aller lokalen Nutzerdaten (für Backup/Übertragung). */
+export interface DataExport {
+  exportedAt: string
+  version: 1
+  plans: UserPlan[]
+  customExercises: CustomExercise[]
+  sessions: WorkoutSession[]
+  bodyWeights: BodyWeightEntry[]
+  exerciseNotes?: ExerciseNote[]
+  settings?: AppSettings
+  bodyMeasurements?: BodyMeasurement[]
 }

@@ -4,8 +4,8 @@ import { splitOptions } from '../data/splitTemplates'
 import type { SplitVariant } from '../types'
 import { buildUserPlanFromVariant } from '../lib/planBuilder'
 import { useAppStore } from '../store/useAppStore'
-
-const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+import Barbell from '../components/Barbell'
+import { DAY_CYCLE_LABELS } from '../lib/schedule'
 
 export default function OnboardingPage() {
   const [daysPerWeek, setDaysPerWeek] = useState<number | null>(null)
@@ -24,28 +24,38 @@ export default function OnboardingPage() {
   return (
     <div className="flex flex-col gap-6 pb-10">
       <header className="pt-4 text-center">
-        <p className="text-sm font-medium text-brand-400">Willkommen bei KinetiQ</p>
-        <h1 className="mt-1 text-2xl font-bold text-white">Erstelle deinen Trainingsplan</h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Wähle, wie oft du pro Woche trainieren willst – wir schlagen dir einen passenden Split vor.
+        <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-400">Willkommen bei KinetiQ</p>
+        <h1 className="font-display mt-2 text-[28px] uppercase leading-[0.95] text-ink">
+          Erstelle deinen Trainingsplan
+        </h1>
+        <p className="mt-3 text-sm text-dim">
+          Wähle, wie oft du in den nächsten 7 Tagen trainieren willst – ab heute als Tag 1 – wir
+          schlagen dir einen passenden Split vor.
         </p>
       </header>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-slate-300">Trainingstage pro Woche</h2>
-        <div className="grid grid-cols-5 gap-2">
+        <h2 className="mb-5 text-xs font-bold uppercase tracking-[.1em] text-dim">
+          Trainingstage in den nächsten 7 Tagen
+        </h2>
+        <div className="flex justify-center overflow-x-auto py-2">
+          <Barbell plates={daysPerWeek ?? 0} size="xl" active={daysPerWeek !== null} />
+        </div>
+        <p className="mt-3 text-center font-display text-2xl text-ink">
+          {daysPerWeek ?? '–'} <span className="text-sm font-body font-semibold text-dim">Tage</span>
+        </p>
+        <div className="mt-5 grid grid-cols-5 gap-2">
           {splitOptions.map((s) => (
             <button
               key={s.daysPerWeek}
               onClick={() => setDaysPerWeek(s.daysPerWeek)}
-              className={`flex flex-col items-center justify-center gap-1 rounded-2xl border py-4 transition-colors ${
+              className={`press flex h-11 items-center justify-center border font-display text-lg transition-colors ${
                 daysPerWeek === s.daysPerWeek
-                  ? 'border-brand-500 bg-brand-500/15 text-white'
-                  : 'border-white/10 bg-white/5 text-slate-300 hover:border-white/20'
+                  ? 'border-ink bg-ink text-on-ink'
+                  : 'border-line bg-surface text-ink hover:border-ink'
               }`}
             >
-              <span className="text-xl font-bold">{s.daysPerWeek}</span>
-              <span className="text-[11px] text-slate-500">Tage</span>
+              {s.daysPerWeek}
             </button>
           ))}
         </div>
@@ -53,31 +63,32 @@ export default function OnboardingPage() {
 
       {split && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold text-slate-300">Split wählen</h2>
+          <h2 className="text-xs font-bold uppercase tracking-[.1em] text-dim">Split wählen</h2>
           {split.variants.map((variant) => (
             <button
               key={variant.id}
               onClick={() => choose(variant)}
-              className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:border-brand-400 hover:bg-brand-500/10"
+              className="press border border-line bg-surface p-4 text-left transition-colors hover:border-ink"
             >
-              <p className="font-semibold text-white">{variant.name}</p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-display text-base text-ink">{variant.name}</p>
+                <Barbell plates={split.daysPerWeek} size="sm" />
+              </div>
               <div className="mt-3 flex gap-1.5">
                 {variant.schedule.map((dayId, i) => {
                   const day = variant.days.find((d) => d.id === dayId)
                   return (
                     <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                      <span className="text-[10px] text-slate-500">{DAY_LABELS[i]}</span>
+                      <span className="text-[10px] font-semibold text-dim">{DAY_CYCLE_LABELS[i]}</span>
                       <div
-                        className={`h-8 w-full rounded-lg ${dayId ? 'bg-brand-500/70' : 'bg-white/5'}`}
+                        className={`h-8 w-full rounded-lg ${dayId ? 'bg-brand-500' : 'bg-panel2'}`}
                         title={day?.name}
                       />
                     </div>
                   )
                 })}
               </div>
-              <p className="mt-3 text-xs text-slate-400">
-                {variant.days.map((d) => d.name).join(' · ')}
-              </p>
+              <p className="mt-3 text-xs text-dim">{variant.days.map((d) => d.name).join(' · ')}</p>
             </button>
           ))}
         </section>

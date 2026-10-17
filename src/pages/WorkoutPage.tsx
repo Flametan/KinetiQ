@@ -1,29 +1,90 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
-import { getLastSetsForExercise } from '../lib/history'
+import { getLastSetsForExercise, getPersonalRecords, suggestNextWeight } from '../lib/history'
+import { groupBySuperset } from '../lib/superset'
+import { suggestWarmupSets } from '../lib/warmup'
+import { playRestEndSound } from '../lib/sound'
 import { generateId } from '../utils/id'
+import { DEFAULT_BAR_WEIGHT, displayToKg, kgToDisplay, kgToUnit, unitLabel } from '../lib/units'
+import { isDeloadWeek } from '../lib/schedule'
+import { exerciseImageByName } from '../data/exerciseImages'
+import { assetUrl } from '../lib/assetUrl'
 import ExercisePicker from '../components/ExercisePicker'
-import type { ExerciseLogEntry, SetEntry } from '../types'
+import PlateCalculatorModal from '../components/PlateCalculatorModal'
+import ConfirmDialog from '../components/ConfirmDialog'
+import type { ExerciseLogEntry, SetEntry, SetType } from '../types'
+
+const DEFAULT_REST_SECONDS = 120
+const RPE_OPTIONS = [5, 6, 7, 8, 9, 10]
+
+const SET_TYPE_ORDER: SetType[] = ['normal', 'warmup', 'failure', 'dropset']
+const SET_TYPE_LABEL: Record<SetType, string> = { normal: '', warmup: 'W', failure: 'F', dropset: 'D' }
+const SET_TYPE_COLOR: Record<SetType, string> = {
+  normal: 'text-dim',
+  warmup: 'text-amber-600',
+  failure: 'text-red-700',
+  dropset: 'text-violet-600',
+}
+
+function formatDuration(totalSeconds: number) {
+  if (totalSeconds < 60) return `${totalSeconds}s`
+  const m = Math.floor(totalSeconds / 60)
+  const s = totalSeconds % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+function formatRest(totalSeconds: number) {
+  const m = Math.floor(totalSeconds / 60)
+  const s = totalSeconds % 60
+  return `${m}min ${s}s`
+}
 
 export default function WorkoutPage() {
   const { dayId } = useParams<{ dayId: string }>()
   const plan = useAppStore((s) => s.activePlan)
   const sessions = useAppStore((s) => s.sessions)
   const addSession = useAppStore((s) => s.addSession)
+  const updatePlan = useAppStore((s) => s.updatePlan)
+  const settings = useAppStore((s) => s.settings)
+  const exerciseNotes = useAppStore((s) => s.exerciseNotes)
+  const setExerciseNote = useAppStore((s) => s.setExerciseNote)
+  const unit = settings.weightUnit
   const navigate = useNavigate()
 
   const day = plan?.days.find((d) => d.id === dayId)
 
+  const lastSetsBySlot = useMemo(() => {
+    const map = new Map<string, SetEntry[] | null>()
+    if (day) {
+      for (const slot of day.slots) {
+        map.set(slot.slotId, slot.exerciseId ? getLastSetsForExercise(sessions, slot.exerciseId) : null)
+      }
+    }
+    return map
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [day?.id])
+
+  const bestWeightBaseline = useMemo(() => {
+    const map = new Map<string, number>()
+    if (day) {
+      const exerciseIds = new Set(day.slots.map((s) => s.exerciseId).filter((id): id is string => !!id))
+      for (const id of exerciseIds) map.set(id, getPersonalRecords(sessions, id).bestWeight)
+    }
+    return map
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [day?.id])
+
   const initialExercises = useMemo<ExerciseLogEntry[]>(() => {
     if (!day) return []
     return day.slots.map((slot) => {
-      const lastSets = slot.exerciseId ? getLastSetsForExercise(sessions, slot.exerciseId) : null
+      const lastSets = lastSetsBySlot.get(slot.slotId) ?? null
       const sets: SetEntry[] = Array.from({ length: slot.sets }, (_, i) => ({
         setNumber: i + 1,
         reps: lastSets?.[i]?.reps ?? slot.repsMin,
         weight: lastSets?.[i]?.weight ?? 0,
         completed: false,
+        type: 'normal',
       }))
       return {
         slotId: slot.slotId,
@@ -34,6 +95,8 @@ export default function WorkoutPage() {
         repsMin: slot.repsMin,
         repsMax: slot.repsMax,
         sets,
+        notes: '',
+        supersetGroup: slot.supersetGroup ?? null,
       }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -41,13 +104,53 @@ export default function WorkoutPage() {
 
   const [exercises, setExercises] = useState<ExerciseLogEntry[]>(initialExercises)
   const [pickerSlotId, setPickerSlotId] = useState<string | null>(null)
+  const [menuSlotId, setMenuSlotId] = useState<string | null>(null)
+  const [notesOpen, setNotesOpen] = useState<Set<string>>(new Set())
+  const [rpeOpen, setRpeOpen] = useState<Set<string>>(new Set())
+  const [plateModal, setPlateModal] = useState<{ weight: number } | null>(null)
   const [startedAt] = useState(() => Date.now())
+  const [elapsed, setElapsed] = useState(0)
+  const [restTimers, setRestTimers] = useState<Record<string, number>>({})
   const [saved, setSaved] = useState(false)
+  const [finishSummary, setFinishSummary] = useState<{ prs: { name: string; weight: number }[] } | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
+  const [sessionNoteOpen, setSessionNoteOpen] = useState(false)
+  const [sessionNote, setSessionNote] = useState('')
+  const [exerciseNoteSlotId, setExerciseNoteSlotId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startedAt) / 1000))
+      setRestTimers((prev) => {
+        let changed = false
+        let anyFinished = false
+        const next: Record<string, number> = {}
+        for (const [key, remaining] of Object.entries(prev)) {
+          if (remaining > 0) {
+            const nr = remaining - 1
+            next[key] = nr
+            changed = true
+            if (nr === 0) anyFinished = true
+          } else {
+            next[key] = remaining
+          }
+        }
+        if (anyFinished) playRestEndSound()
+        return changed ? next : prev
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [startedAt])
 
   if (!plan) return <Navigate to="/onboarding" replace />
   if (!day) return <Navigate to="/training" replace />
 
+  const deloadActive = settings.deloadEnabled && isDeloadWeek(plan.createdAt, settings.deloadIntervalWeeks)
+  const deloadFactor = deloadActive ? 0.9 : 1
+
   const planSlot = (slotId: string) => day.slots.find((s) => s.slotId === slotId)!
+  const restSecondsFor = (slotId: string) => planSlot(slotId).restSeconds ?? DEFAULT_REST_SECONDS
 
   function updateSet(slotId: string, setIndex: number, patch: Partial<SetEntry>) {
     setExercises((prev) =>
@@ -56,6 +159,56 @@ export default function WorkoutPage() {
           ? ex
           : { ...ex, sets: ex.sets.map((s, i) => (i === setIndex ? { ...s, ...patch } : s)) },
       ),
+    )
+  }
+
+  function toggleSetCompleted(ex: ExerciseLogEntry, setIndex: number, isLastInGroup: boolean, groupKey: string) {
+    let willBeCompleted = false
+    setExercises((prev) =>
+      prev.map((e) => {
+        if (e.slotId !== ex.slotId) return e
+        return {
+          ...e,
+          sets: e.sets.map((s, i) => {
+            if (i !== setIndex) return s
+            willBeCompleted = !s.completed
+            return { ...s, completed: willBeCompleted }
+          }),
+        }
+      }),
+    )
+    if (willBeCompleted && isLastInGroup) {
+      setRestTimers((r) => ({ ...r, [groupKey]: restSecondsFor(ex.slotId) }))
+    }
+  }
+
+  function adjustRest(groupKey: string, lastSlotId: string, delta: number) {
+    const next = Math.max(15, restSecondsFor(lastSlotId) + delta)
+    updatePlan((p) => ({
+      ...p,
+      days: p.days.map((d) =>
+        d.id !== day!.id
+          ? d
+          : { ...d, slots: d.slots.map((s) => (s.slotId === lastSlotId ? { ...s, restSeconds: next } : s)) },
+      ),
+    }))
+    setRestTimers((r) => (r[groupKey] !== undefined && r[groupKey] > 0 ? { ...r, [groupKey]: next } : r))
+  }
+
+  function cycleSetType(slotId: string, setIndex: number) {
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.slotId !== slotId) return ex
+        return {
+          ...ex,
+          sets: ex.sets.map((s, i) => {
+            if (i !== setIndex) return s
+            const current = s.type ?? 'normal'
+            const nextType = SET_TYPE_ORDER[(SET_TYPE_ORDER.indexOf(current) + 1) % SET_TYPE_ORDER.length]
+            return { ...s, type: nextType }
+          }),
+        }
+      }),
     )
   }
 
@@ -73,6 +226,7 @@ export default function WorkoutPage() {
                   reps: ex.sets.at(-1)?.reps ?? ex.repsMin,
                   weight: ex.sets.at(-1)?.weight ?? 0,
                   completed: false,
+                  type: 'normal',
                 },
               ],
             },
@@ -90,14 +244,51 @@ export default function WorkoutPage() {
     )
   }
 
+  function addWarmupSets(ex: ExerciseLogEntry) {
+    const workingSet = ex.sets.find((s) => (s.type ?? 'normal') !== 'warmup' && s.weight > 0)
+    if (!workingSet) {
+      alert('Trag zuerst ein Arbeitsgewicht ein, dann kann ich Aufwärmsätze vorschlagen.')
+      return
+    }
+    const suggestions = suggestWarmupSets(workingSet.weight)
+    if (suggestions.length === 0) return
+    setExercises((prev) =>
+      prev.map((e) => {
+        if (e.slotId !== ex.slotId) return e
+        const warmupSets: SetEntry[] = suggestions.map((s) => ({ ...s, completed: false, type: 'warmup', setNumber: 0 }))
+        return { ...e, sets: [...warmupSets, ...e.sets].map((s, i) => ({ ...s, setNumber: i + 1 })) }
+      }),
+    )
+  }
+
   function assignExercise(slotId: string, ex: { id: string; name: string }) {
     setExercises((prev) =>
       prev.map((e) => (e.slotId !== slotId ? e : { ...e, exerciseId: ex.id, exerciseName: ex.name })),
     )
   }
 
+  function updateNotes(slotId: string, notes: string) {
+    setExercises((prev) => prev.map((e) => (e.slotId !== slotId ? e : { ...e, notes })))
+  }
+
+  function toggleInSet(setState: Set<string>, setter: (s: Set<string>) => void, slotId: string) {
+    const next = new Set(setState)
+    if (next.has(slotId)) next.delete(slotId)
+    else next.add(slotId)
+    setter(next)
+  }
+
   async function finish() {
+    setSaving(true)
     const completedExercises = exercises.filter((e) => e.exerciseId)
+    const newPRs: { name: string; weight: number }[] = []
+    for (const ex of completedExercises) {
+      const working = ex.sets.filter((s) => s.completed && s.weight > 0 && (s.type ?? 'normal') !== 'warmup')
+      if (working.length === 0) continue
+      const maxWeight = Math.max(...working.map((s) => s.weight))
+      const priorBest = bestWeightBaseline.get(ex.exerciseId) ?? 0
+      if (priorBest > 0 && maxWeight > priorBest) newPRs.push({ name: ex.exerciseName, weight: maxWeight })
+    }
     await addSession({
       id: generateId('session'),
       planId: plan!.id,
@@ -107,116 +298,386 @@ export default function WorkoutPage() {
       startedAt,
       finishedAt: Date.now(),
       exercises: completedExercises,
+      note: sessionNote.trim() || undefined,
     })
     setSaved(true)
-    setTimeout(() => navigate('/progress'), 900)
+    if (newPRs.length > 0) {
+      setFinishSummary({ prs: newPRs })
+    } else {
+      setTimeout(() => navigate('/progress'), 900)
+    }
+  }
+
+  function cancelWorkout() {
+    setConfirmCancel(true)
   }
 
   const hasAnyLoggedSet = exercises.some((e) => e.sets.some((s) => s.completed))
+  const totalVolume = exercises.reduce(
+    (sum, ex) =>
+      sum +
+      ex.sets.filter((s) => s.completed && s.type !== 'warmup').reduce((sSum, s) => sSum + s.weight * s.reps, 0),
+    0,
+  )
+  const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.filter((s) => s.completed).length, 0)
+  const blocks = groupBySuperset(exercises)
 
-  return (
-    <div className="flex flex-col gap-5 pb-32">
-      <header className="pt-2">
-        <p className="text-xs font-medium text-brand-400">{plan.variantName}</p>
-        <h1 className="mt-0.5 text-xl font-bold text-white">{day.name}</h1>
-      </header>
+  function renderExerciseBody(ex: ExerciseLogEntry) {
+    const lastSets = lastSetsBySlot.get(ex.slotId)
+    const priorBest = bestWeightBaseline.get(ex.exerciseId) ?? 0
 
-      <section className="flex flex-col gap-4">
-        {exercises.map((ex) => (
-          <div key={ex.slotId} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs text-slate-500">{ex.label}</p>
+    return (
+      <div>
+        <div className="mb-1 flex items-start justify-between gap-3">
+          <button onClick={() => setPickerSlotId(ex.slotId)} className="flex min-w-0 items-center gap-2.5 text-left">
+            {ex.exerciseName && exerciseImageByName[ex.exerciseName] && (
+              <img
+                src={assetUrl(exerciseImageByName[ex.exerciseName])}
+                alt=""
+                loading="lazy"
+                className="h-11 w-11 shrink-0 rounded-xl border border-line object-cover"
+              />
+            )}
+            <p className="font-display truncate text-[17px] leading-tight text-ink">
+              {ex.exerciseName || 'Übung wählen'}
+            </p>
+          </button>
+          <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setMenuSlotId(menuSlotId === ex.slotId ? null : ex.slotId)}
+              className="icon-btn press text-dim hover:bg-panel2 hover:text-ink"
+              aria-label="Optionen"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="1.8" />
+                <circle cx="12" cy="12" r="1.8" />
+                <circle cx="19" cy="12" r="1.8" />
+              </svg>
+            </button>
+            {menuSlotId === ex.slotId && (
+              <div className="absolute right-0 z-10 mt-1 w-56 overflow-hidden border border-ink bg-surface shadow-xl">
                 <button
-                  onClick={() => setPickerSlotId(ex.slotId)}
-                  className="text-left text-base font-semibold text-white hover:text-brand-300"
+                  onClick={() => {
+                    setPickerSlotId(ex.slotId)
+                    setMenuSlotId(null)
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
                 >
-                  {ex.exerciseName || 'Übung wählen'}
+                  Übung ersetzen
+                </button>
+                <button
+                  onClick={() => {
+                    toggleInSet(notesOpen, setNotesOpen, ex.slotId)
+                    setMenuSlotId(null)
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
+                >
+                  {notesOpen.has(ex.slotId) ? 'Session-Notiz ausblenden' : 'Session-Notiz hinzufügen'}
+                </button>
+                <button
+                  onClick={() => {
+                    setExerciseNoteSlotId(exerciseNoteSlotId === ex.slotId ? null : ex.slotId)
+                    setMenuSlotId(null)
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
+                >
+                  Übungs-Hinweis bearbeiten
+                </button>
+                <button
+                  onClick={() => {
+                    toggleInSet(rpeOpen, setRpeOpen, ex.slotId)
+                    setMenuSlotId(null)
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
+                >
+                  {rpeOpen.has(ex.slotId) ? 'RPE ausblenden' : 'RPE anzeigen'}
+                </button>
+                <button
+                  onClick={() => {
+                    addWarmupSets(ex)
+                    setMenuSlotId(null)
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
+                >
+                  Aufwärmsätze vorschlagen
+                </button>
+                <button
+                  onClick={() => {
+                    setPlateModal({ weight: ex.sets.find((s) => s.weight > 0)?.weight ?? displayToKg(DEFAULT_BAR_WEIGHT[unit], unit) })
+                    setMenuSlotId(null)
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-panel2"
+                >
+                  Plattenrechner
                 </button>
               </div>
-              <span className="shrink-0 rounded-md bg-white/5 px-2 py-1 text-xs font-medium text-slate-300">
-                Ziel: {ex.targetSets} × {ex.repsMin}-{ex.repsMax}
-              </span>
-            </div>
-
-            {ex.exerciseId ? (
-              <div className="flex flex-col gap-2">
-                <div className="grid grid-cols-[1.5rem_1fr_1fr_2.25rem] gap-2 px-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
-                  <span>#</span>
-                  <span>Wdh.</span>
-                  <span>Gewicht (kg)</span>
-                  <span></span>
-                </div>
-                {ex.sets.map((set, i) => (
-                  <div key={i} className="grid grid-cols-[1.5rem_1fr_1fr_2.25rem] items-center gap-2">
-                    <span className="text-sm text-slate-500">{set.setNumber}</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      value={set.reps}
-                      onChange={(e) => updateSet(ex.slotId, i, { reps: Number(e.target.value) })}
-                      className="w-full rounded-lg border border-white/10 bg-slate-950 px-2.5 py-2 text-center text-sm text-white focus:border-brand-400 focus:outline-none"
-                    />
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.5"
-                      value={set.weight}
-                      onChange={(e) => updateSet(ex.slotId, i, { weight: Number(e.target.value) })}
-                      className="w-full rounded-lg border border-white/10 bg-slate-950 px-2.5 py-2 text-center text-sm text-white focus:border-brand-400 focus:outline-none"
-                    />
-                    <button
-                      onClick={() => updateSet(ex.slotId, i, { completed: !set.completed })}
-                      className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
-                        set.completed
-                          ? 'border-brand-500 bg-brand-500 text-white'
-                          : 'border-white/15 text-slate-500 hover:border-white/30'
-                      }`}
-                      aria-label="Satz erledigt"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 6 9 17l-5-5" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-                <div className="mt-1 flex gap-2">
-                  <button
-                    onClick={() => addSet(ex.slotId)}
-                    className="flex-1 rounded-lg border border-dashed border-white/15 py-1.5 text-xs font-medium text-slate-400 hover:border-white/30 hover:text-white"
-                  >
-                    + Satz
-                  </button>
-                  {ex.sets.length > 1 && (
-                    <button
-                      onClick={() => removeSet(ex.slotId, ex.sets.length - 1)}
-                      className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-white"
-                    >
-                      Satz entfernen
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setPickerSlotId(ex.slotId)}
-                className="w-full rounded-xl border border-dashed border-white/20 py-3 text-sm text-slate-400 hover:border-brand-400 hover:text-brand-300"
-              >
-                Übung auswählen, um Sätze zu erfassen
-              </button>
             )}
           </div>
-        ))}
-      </section>
+        </div>
 
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-md px-4">
+        <p className="mb-1 truncate text-xs text-dim">
+          {ex.label} · Ziel {ex.targetSets} × {ex.repsMin}-{ex.repsMax}
+        </p>
+
+        {(() => {
+          const persistentNote = exerciseNotes.find((n) => n.exerciseId === ex.exerciseId)?.note
+          return persistentNote && exerciseNoteSlotId !== ex.slotId ? (
+            <p className="mb-2 truncate text-xs italic text-brand-400">{persistentNote}</p>
+          ) : null
+        })()}
+
+        {exerciseNoteSlotId === ex.slotId && (
+          <input
+            defaultValue={exerciseNotes.find((n) => n.exerciseId === ex.exerciseId)?.note ?? ''}
+            onBlur={(e) => setExerciseNote(ex.exerciseId, e.target.value)}
+            placeholder="Dauerhafter Hinweis, z.B. Sitzhöhe 4…"
+            autoFocus
+            className="mb-2 w-full border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
+          />
+        )}
+
+        {notesOpen.has(ex.slotId) && (
+          <input
+            value={ex.notes ?? ''}
+            onChange={(e) => updateNotes(ex.slotId, e.target.value)}
+            placeholder="Notizen für dieses Training…"
+            className="mb-2 w-full border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
+          />
+        )}
+
+        {ex.exerciseId ? (
+          <>
+            <div className="grid grid-cols-[1.75rem_4.25rem_1fr_1fr_2.75rem] gap-2 px-1 pb-1.5 text-[10px] font-bold uppercase tracking-[.06em] text-dim">
+              <span>Satz</span>
+              <span>Vorherige</span>
+              <span>{unitLabel(unit)}</span>
+              <span>Wdh.</span>
+              <span></span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {ex.sets.map((set, i) => {
+                const prev = lastSets?.[i]
+                const type = set.type ?? 'normal'
+                const isPR = set.completed && type !== 'warmup' && priorBest > 0 && set.weight > priorBest
+                const suggestion =
+                  i === 0 && type === 'normal' ? suggestNextWeight(lastSets ?? null, ex.repsMax, deloadFactor) : null
+                return (
+                  <div key={i} className="flex flex-col gap-1 border-t border-line pt-1.5 first:border-t-0 first:pt-0">
+                    <div className="grid grid-cols-[1.75rem_4.25rem_1fr_1fr_2.75rem] items-center gap-2">
+                      <button
+                        onClick={() => cycleSetType(ex.slotId, i)}
+                        className={`font-display text-sm ${SET_TYPE_COLOR[type]}`}
+                        title="Satztyp ändern (Normal/Warm-up/Failure/Dropset)"
+                      >
+                        {type === 'normal' ? set.setNumber : SET_TYPE_LABEL[type]}
+                      </button>
+                      <span className="flex flex-col truncate text-xs text-dim">
+                        <span className="flex items-center gap-1">
+                          {prev ? `${kgToDisplay(prev.weight, unit)}${unitLabel(unit)} × ${prev.reps}` : '—'}
+                          {isPR && (
+                            <span className="shrink-0 rounded-full bg-brand-500 px-1.5 py-0.5 text-[9px] font-bold text-white">PR</span>
+                          )}
+                        </span>
+                        {suggestion !== null && (
+                          <span className="text-brand-400">Ziel: {kgToDisplay(suggestion, unit)}{unitLabel(unit)}</span>
+                        )}
+                      </span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.5"
+                        value={kgToDisplay(set.weight, unit)}
+                        onChange={(e) => updateSet(ex.slotId, i, { weight: displayToKg(Number(e.target.value), unit) })}
+                        className="w-full border border-line bg-surface px-2 py-2 text-center text-sm font-bold text-ink focus:border-ink focus:outline-none"
+                      />
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={set.reps}
+                        onChange={(e) => updateSet(ex.slotId, i, { reps: Number(e.target.value) })}
+                        className="w-full border border-line bg-surface px-2 py-2 text-center text-sm font-bold text-ink focus:border-ink focus:outline-none"
+                      />
+                      <button
+                        onClick={() => {
+                          const block = blocks.find((b) => b.some((e) => e.slotId === ex.slotId)) ?? [ex]
+                          const isLast = block.at(-1)!.slotId === ex.slotId
+                          const groupKey = ex.supersetGroup ?? ex.slotId
+                          toggleSetCompleted(ex, i, isLast, groupKey)
+                          if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10)
+                        }}
+                        className={`press flex h-11 w-11 items-center justify-center rounded-xl border-2 transition-colors ${
+                          set.completed ? 'border-ink bg-ink text-on-ink' : 'border-ink text-ink hover:bg-panel2'
+                        }`}
+                        aria-label="Satz erledigt"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                      </button>
+                    </div>
+                    {rpeOpen.has(ex.slotId) && (
+                      <div className="flex items-center gap-1.5 pl-9">
+                        <span className="mr-0.5 text-[10px] font-semibold text-dim">RPE</span>
+                        {RPE_OPTIONS.map((v) => (
+                          <button
+                            key={v}
+                            onClick={() => updateSet(ex.slotId, i, { rpe: set.rpe === v ? undefined : v })}
+                            className={`press flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold transition-colors ${
+                              set.rpe === v ? 'bg-ink text-on-ink' : 'bg-panel2 text-dim hover:bg-line'
+                            }`}
+                          >
+                            {v}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={() => addSet(ex.slotId)}
+                className="flex-1 border border-dashed border-line py-1.5 text-xs font-semibold text-dim hover:border-ink hover:text-ink"
+              >
+                + Satz hinzufügen
+              </button>
+              {ex.sets.length > 1 && (
+                <button
+                  onClick={() => removeSet(ex.slotId, ex.sets.length - 1)}
+                  className="border border-line px-3 py-1.5 text-xs font-semibold text-dim hover:text-ink"
+                >
+                  Satz entfernen
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <button
+            onClick={() => setPickerSlotId(ex.slotId)}
+            className="w-full border border-dashed border-line py-3 text-sm font-semibold text-dim hover:border-ink hover:text-ink"
+          >
+            Übung auswählen, um Sätze zu erfassen
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="-mx-4 -mt-6 flex flex-col pb-10" onClick={() => setMenuSlotId(null)}>
+      <div className="sticky top-0 z-20 border-b-[3px] border-ink bg-paper/95 px-4 pb-3 pt-4 backdrop-blur">
+        <div className="flex items-center justify-between">
+          <button onClick={() => navigate('/training')} className="flex items-center gap-1 text-ink">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+            <span className="font-display text-[17px] uppercase">{day.name}</span>
+          </button>
+          <button
+            onClick={finish}
+            disabled={!hasAnyLoggedSet || saved || saving}
+            aria-busy={saving}
+            className="press min-h-11 rounded-full bg-ink px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-on-ink disabled:opacity-40"
+          >
+            {saved ? 'Gespeichert ✓' : saving ? 'Speichert…' : 'Beenden'}
+          </button>
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <Stat label="Dauer" value={formatDuration(elapsed)} />
+          <Stat
+            label="Volumen"
+            value={`${Math.round(kgToUnit(totalVolume, unit)).toLocaleString('de-DE')} ${unitLabel(unit)}`}
+            accent
+          />
+          <Stat label="Sätze" value={String(totalSets)} />
+          <button
+            onClick={cancelWorkout}
+            className="icon-btn press text-dim hover:bg-panel2 hover:text-ink"
+            aria-label="Training abbrechen"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        {deloadActive && (
+          <p className="mt-3 rounded-2xl border border-brand-400 bg-panel2 px-3 py-1.5 text-xs font-semibold text-brand-400">
+            Deload-Woche – Gewichte sind automatisch ~10% reduziert vorgeschlagen.
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-col px-4">
         <button
-          onClick={finish}
-          disabled={!hasAnyLoggedSet || saved}
-          className="w-full rounded-2xl bg-brand-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-900/40 disabled:opacity-40"
+          onClick={() => setSessionNoteOpen((v) => !v)}
+          className="mt-4 self-start text-xs font-semibold text-dim hover:text-ink"
         >
-          {saved ? 'Gespeichert ✓' : 'Training abschließen'}
+          {sessionNoteOpen ? 'Trainingsnotiz ausblenden' : '+ Trainingsnotiz'}
         </button>
+        {sessionNoteOpen && (
+          <textarea
+            value={sessionNote}
+            onChange={(e) => setSessionNote(e.target.value)}
+            placeholder="Wie war das Training? (optional)"
+            rows={2}
+            className="mt-2 w-full border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-ink focus:outline-none"
+          />
+        )}
+        {blocks.map((block, blockIdx) => {
+          const isGrouped = block.length > 1
+          const lastEx = block.at(-1)!
+          const groupKey = lastEx.supersetGroup ?? lastEx.slotId
+          const restDefault = restSecondsFor(lastEx.slotId)
+          const restRemaining = restTimers[groupKey] ?? restDefault
+          const allHaveExercise = block.every((e) => e.exerciseId)
+
+          return (
+            <div key={groupKey + blockIdx} className={blockIdx > 0 ? 'mt-6 border-t border-line pt-6' : 'mt-5'}>
+              {isGrouped && (
+                <div className="mb-2.5 flex items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-[.12em] text-brand-400">Superset</span>
+                  <span className="h-px flex-1 bg-line" />
+                </div>
+              )}
+              <div className={isGrouped ? 'flex flex-col gap-5 rounded-2xl bg-panel2 p-3.5' : ''}>
+                {block.map((ex) => (
+                  <div key={ex.slotId}>{renderExerciseBody(ex)}</div>
+                ))}
+              </div>
+              {allHaveExercise && (
+                <div
+                  className={`mt-3 flex items-center gap-3 rounded-full px-3.5 py-2 transition-colors ${
+                    restRemaining > 0 ? 'bg-brand-500/15' : 'bg-panel2'
+                  }`}
+                >
+                  <ClockMini />
+                  <span className="font-display flex-1 text-base text-brand-400 tabular-nums">
+                    {formatRest(restRemaining)}
+                  </span>
+                  <button
+                    onClick={() => adjustRest(groupKey, lastEx.slotId, -15)}
+                    className="press rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-ink"
+                  >
+                    −15s
+                  </button>
+                  <button
+                    onClick={() => adjustRest(groupKey, lastEx.slotId, 15)}
+                    className="press rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-ink"
+                  >
+                    +15s
+                  </button>
+                  <button
+                    onClick={() => setRestTimers((r) => ({ ...r, [groupKey]: restDefault }))}
+                    className="press rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-ink"
+                  >
+                    Reset
+                  </button>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {pickerSlotId && (
@@ -229,6 +690,65 @@ export default function WorkoutPage() {
           onSelect={(ex) => assignExercise(pickerSlotId, ex)}
         />
       )}
+
+      {plateModal && (
+        <PlateCalculatorModal open onClose={() => setPlateModal(null)} initialWeight={plateModal.weight} />
+      )}
+
+      {finishSummary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+          <div className="w-full max-w-sm rounded-3xl border border-line bg-surface p-6 text-center">
+            <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-400">Neue Bestwerte</p>
+            <h2 className="font-display mt-2 text-2xl uppercase text-ink">Glückwunsch</h2>
+            <div className="mt-4 flex flex-col gap-2 text-left">
+              {finishSummary.prs.map((pr, i) => (
+                <div key={i} className="flex items-center justify-between rounded-xl bg-panel2 px-3 py-2.5">
+                  <span className="text-sm font-medium text-ink">{pr.name}</span>
+                  <span className="rounded-full bg-brand-500 px-2.5 py-0.5 text-sm font-bold text-white">{kgToDisplay(pr.weight, unit)} {unitLabel(unit)}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => navigate('/progress')}
+              className="press mt-5 w-full rounded-full bg-ink py-3 text-sm font-bold uppercase tracking-wide text-on-ink"
+            >
+              Weiter
+            </button>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmCancel}
+        title="Training abbrechen?"
+        message="Nicht gespeicherte Eingaben gehen verloren."
+        cancelLabel="Weiter trainieren"
+        confirmLabel="Ja, abbrechen"
+        danger
+        onCancel={() => setConfirmCancel(false)}
+        onConfirm={() => {
+          setConfirmCancel(false)
+          navigate('/training')
+        }}
+      />
     </div>
+  )
+}
+
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-[10px] font-bold uppercase tracking-[.08em] text-dim">{label}</span>
+      <span className={`font-display text-lg ${accent ? 'text-brand-400' : 'text-ink'}`}>{value}</span>
+    </div>
+  )
+}
+
+function ClockMini() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-400">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" />
+    </svg>
   )
 }

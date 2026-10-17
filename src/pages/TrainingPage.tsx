@@ -1,35 +1,65 @@
+import { useEffect } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
-
-const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+import { dayLabel, getDayIndexInCycle, getMesocycleWeek, isDeloadWeek, isToday } from '../lib/schedule'
 
 export default function TrainingPage() {
   const plan = useAppStore((s) => s.activePlan)
   const sessions = useAppStore((s) => s.sessions)
+  const settings = useAppStore((s) => s.settings)
   const navigate = useNavigate()
 
-  if (!plan) return <Navigate to="/onboarding" replace />
+  const todayIndex = plan ? getDayIndexInCycle(plan.createdAt) : 0
+  const suggestedDayId = plan ? plan.schedule[todayIndex] : null
+  const trainedToday = sessions.some((s) => isToday(s.date))
 
-  const todayIndex = (new Date().getDay() + 6) % 7 // 0 = Montag
-  const suggestedDayId = plan.schedule[todayIndex]
+  useEffect(() => {
+    if (!plan || !settings.remindersEnabled || !suggestedDayId || trainedToday) return
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    const key = `kinetiq-reminder-${new Date().toDateString()}`
+    if (sessionStorage.getItem(key)) return
+    sessionStorage.setItem(key, '1')
+    const dayName = plan.days.find((d) => d.id === suggestedDayId)?.name ?? 'Training'
+    new Notification('KinetiQ', { body: `Heute steht an: ${dayName}` })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan?.id, settings.remindersEnabled, suggestedDayId, trainedToday])
+
+  if (!plan) return <Navigate to="/onboarding" replace />
 
   const lastSessionByDay = new Map<string, string>()
   for (const s of sessions) {
     if (!lastSessionByDay.has(s.planDayId)) lastSessionByDay.set(s.planDayId, s.date)
   }
 
+  const deloadActive = settings.deloadEnabled && isDeloadWeek(plan.createdAt, settings.deloadIntervalWeeks)
+  const mesoWeek = getMesocycleWeek(plan.createdAt)
+
   return (
     <div className="flex flex-col gap-6 pb-10">
       <header className="pt-2">
-        <p className="text-xs font-medium text-brand-400">Training starten</p>
-        <h1 className="mt-0.5 text-xl font-bold text-white">Was steht heute an?</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Heute ist {DAY_LABELS[todayIndex]} —{' '}
+        <p className="text-xs font-bold uppercase tracking-[.1em] text-brand-400">Training starten</p>
+        <h1 className="font-display mt-1 text-[26px] uppercase leading-[0.95] text-ink">Was steht heute an?</h1>
+        <p className="mt-2 text-sm text-dim">
+          Heute ist {dayLabel(todayIndex)} deines Zyklus —{' '}
           {suggestedDayId
             ? `geplant: ${plan.days.find((d) => d.id === suggestedDayId)?.name}`
             : 'eigentlich Ruhetag, du kannst aber trotzdem trainieren'}
         </p>
       </header>
+
+      {deloadActive && (
+        <div className="rounded-2xl border border-brand-400 bg-panel2 px-4 py-3">
+          <p className="text-sm font-semibold text-brand-400">Deload-Woche (Woche {mesoWeek})</p>
+          <p className="mt-0.5 text-xs text-dim">Gewichtsvorschläge sind diese Woche automatisch ~10% reduziert.</p>
+        </div>
+      )}
+
+      {settings.remindersEnabled && suggestedDayId && !trainedToday && (
+        <div className="border border-ink bg-ink px-4 py-3 text-on-ink">
+          <p className="text-sm font-semibold">Heute steht ein Training an</p>
+          <p className="mt-0.5 text-xs opacity-70">Du hast heute noch nicht trainiert.</p>
+        </div>
+      )}
 
       <section className="flex flex-col gap-3">
         {plan.days.map((day) => {
@@ -39,27 +69,32 @@ export default function TrainingPage() {
             <button
               key={day.id}
               onClick={() => navigate(`/training/${day.id}`)}
-              className={`flex items-center justify-between rounded-2xl border p-4 text-left transition-colors ${
-                isSuggested
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-white/10 bg-white/5 hover:border-white/20'
+              className={`press flex items-center justify-between border p-4 text-left transition-colors ${
+                isSuggested ? 'border-ink bg-surface' : 'border-line bg-surface hover:border-ink'
               }`}
             >
               <div>
-                <p className="font-semibold text-white">{day.name}</p>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p className="font-display text-base text-ink">{day.name}</p>
+                <p className="mt-0.5 text-xs text-dim">
                   {day.slots.length} Übungen{lastDate ? ` · zuletzt ${formatDate(lastDate)}` : ''}
                 </p>
               </div>
               {isSuggested && (
-                <span className="rounded-full bg-brand-500 px-2.5 py-1 text-[10px] font-semibold text-white">
-                  HEUTE
+                <span className="rounded-full bg-brand-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                  Heute
                 </span>
               )}
             </button>
           )
         })}
       </section>
+
+      <button
+        onClick={() => navigate('/interval')}
+        className="border border-dashed border-line py-3 text-sm font-semibold text-dim hover:border-ink hover:text-ink"
+      >
+        Zirkel-/EMOM-Training starten
+      </button>
     </div>
   )
 }

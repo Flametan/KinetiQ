@@ -1,26 +1,92 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-brand-50: #eef4ff;
-  --color-brand-100: #dae7ff;
-  --color-brand-200: #bcd3ff;
-  --color-brand-300: #8eb6ff;
-  --color-brand-400: #598eff;
-  --color-brand-500: #3466ff;
-  --color-brand-600: #1f45f5;
-  --color-brand-700: #1a35e0;
-  --color-brand-800: #1c2eb5;
-  --color-brand-900: #1c2c8f;
+  /* Bordeaux — primary accent. 400 = vivid, used for active states/links/CTAs.
+     500 = deeper solid-fill tone for badges/buttons with light text on top. */
+  --color-brand-50: #f8e9ec;
+  --color-brand-100: #efc9d1;
+  --color-brand-200: #de96a5;
+  --color-brand-300: #c96a7f;
+  --color-brand-400: #c1314d;
+  --color-brand-500: #9c2740;
+  --color-brand-600: #7d1f33;
+  --color-brand-700: #5e1726;
+  --color-brand-800: #450f1b;
+  --color-brand-900: #2d0a12;
+
+  /* Neutrals — dark-by-default (see :root / [data-theme] below for the light variant) */
+  --color-paper: #0e0d10;
+  --color-panel2: #1c1a1e;
+  --color-ink: #f3f1ee;
+  --color-dim: #938f8a;
+  --color-line: #2c2a2e;
+  /* Card/modal surface — distinct from paper so cards sit "above" the page */
+  --color-surface: #171518;
+  /* Text/icon color for content placed on a bg-ink fill (flips with ink) */
+  --color-on-ink: #141316;
+
+  --font-display: 'Archivo Black', 'Source Sans 3', sans-serif;
+  --font-body: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1.25rem;
 }
 
 html {
   color-scheme: dark;
 }
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+/* Helles Pendant — explizit per data-theme="light" (Einstellung) ... */
+:root[data-theme='light'] {
+  --color-paper: #faf8f7;
+  --color-panel2: #f1edec;
+  --color-ink: #1c1a1b;
+  --color-dim: #716d6c;
+  --color-line: #e4dfde;
+  --color-brand-300: #c1314d;
+  --color-brand-400: #9c2740;
+  --color-brand-500: #9c2740;
+  --color-brand-600: #7d1f33;
+  --color-surface: #ffffff;
+  --color-on-ink: #faf8f7;
+}
+
+/* ...oder automatisch, wenn Darstellung="System" (kein data-theme gesetzt) und OS Hell bevorzugt.
+   Ohne gesetzte Präferenz bleibt es beim dunklen Bordeaux-Theme (siehe @theme oben). */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --color-paper: #faf8f7;
+    --color-panel2: #f1edec;
+    --color-ink: #1c1a1b;
+    --color-dim: #716d6c;
+    --color-line: #e4dfde;
+    --color-brand-300: #c1314d;
+    --color-brand-400: #9c2740;
+    --color-brand-500: #9c2740;
+    --color-brand-600: #7d1f33;
+    --color-surface: #ffffff;
+    --color-on-ink: #faf8f7;
+    color-scheme: light;
+  }
+}
 
 body {
-  @apply bg-slate-950 text-slate-100 antialiased;
+  @apply bg-paper text-ink antialiased;
+  font-family: var(--font-body);
   margin: 0;
   overscroll-behavior-y: none;
+}
+
+h1,
+h2,
+.font-display {
+  font-family: var(--font-display);
+  text-wrap: balance;
 }
 
 #root {
@@ -28,7 +94,7 @@ body {
 }
 
 ::selection {
-  @apply bg-brand-500/40;
+  @apply bg-brand-400/30;
 }
 
 input[type='number']::-webkit-outer-spin-button,
@@ -46,4 +112,72 @@ input[type='number'] {
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Entfernt die 300ms-Tap-Verzögerung auf mobilen Browsern für alle interaktiven Elemente. */
+button,
+a,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+/* Gemeinsame 44x44px-Mindestgröße für runde Icon-Buttons (Schließen, Optionen, Löschen, …). */
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+/* Standard-Card-Hülle: abgerundete Ecken statt der früheren scharfen "editorial" Kanten.
+   Greift automatisch auf jedes Element mit voller Umrandung (border + border-line) –
+   reine Trenn-/Richtungslinien (border-t/-b/-r/-l) nutzen die eigene "border"-Klasse
+   nicht und bleiben davon unberührt. .icon-btn behält seinen eigenen Kreis-Radius. */
+.card {
+  border-radius: var(--radius-card);
+}
+/* :where() hält die Spezifität bei 0, damit jede explizite rounded-*-Utility
+   (z. B. rounded-full auf Pill-Buttons) diesen Default jederzeit übersteuert. */
+:where(.border.border-line:not(.icon-btn), .border.border-ink:not(.icon-btn), .border-2.border-ink:not(.icon-btn)) {
+  border-radius: var(--radius-card);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .press {
+    transition: transform 0.1s ease;
+  }
+  .press:active {
+    transform: scale(0.96);
+  }
+
+  /* Scheiben "gleiten" beim Hinzufügen von ihrer jeweiligen Seite auf die Stange. */
+  @keyframes plate-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-14px) scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+  @keyframes plate-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(14px) scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+  .plate-in-left {
+    animation: plate-in-left 0.2s ease-out;
+  }
+  .plate-in-right {
+    animation: plate-in-right 0.2s ease-out;
+  }
 }
